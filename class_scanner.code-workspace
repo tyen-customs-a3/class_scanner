@@ -1,0 +1,49 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/__pycache__/": true,
+			"**/*.py[cod]": true,
+			"**/*$py.class": true,
+			"**/*.so": true,
+			"**/.Python": true,
+			"**/build/": true,
+			"**/develop-eggs/": true,
+			"**/dist/": true,
+			"**/downloads/": true,
+			"**/eggs/": true,
+			"**/.eggs/": true,
+			"**/lib/": true,
+			"**/lib64/": true,
+			"**/parts/": true,
+			"**/sdist/": true,
+			"**/var/": true,
+			"**/wheels/": true,
+			"**/*.egg-info/": true,
+			"**/.installed.cfg": true,
+			"**/*.egg": true,
+			"**/.venv": true,
+			"**/.env": true,
+			"**/venv/": true,
+			"**/ENV/": true,
+			"**/.idea/": true,
+			"**/.vscode/": true,
+			"**/.pytest_cache/": true,
+			"**/.coverage": true,
+			"**/coverage.xml": true,
+			"sample_data/*.ini": true,
+			"sample_data/config.ini": false,
+			"**/logs/": true,
+			"**/*.log": true,
+			"**/.DS_Store": true,
+			"**/Thumbs.db": true,
+			"**/config_analysis.txt": true,
+			".pytest_cache/**/*": true,
+			".venv/**/*": true
+		}
+	}
+}
