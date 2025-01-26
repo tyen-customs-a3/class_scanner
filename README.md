@@ -1,123 +1,125 @@
-# Asset Scanner
+# Class Scanner
 
-A high-performance asset scanner for game content with multi-threaded processing, smart caching, and comprehensive asset management capabilities.
+A specialized Python tool for scanning and analyzing class definitions in game mod files, with support for PBO archives, inheritance tracking, and smart caching.
+
+## Installation
 
 ## Features
 
-- Multi-threaded scanning with automatic CPU core optimization
-- Path normalization and case-insensitive lookups
-- Smart caching with immutable data structures
-- PBO archive analysis with prefix preservation
-- Extension and pattern-based filtering
-- Progress tracking support
-- Source-based asset organization
-- Related asset discovery
-- Game folder structure support
+- Multi-threaded scanning of class definitions
+- PBO archive extraction and analysis
+- Smart caching with thread-safe operations
+- Inheritance chain tracking and validation
+- Property analysis across class hierarchies
+- Support for nested class structures
+- Progress tracking during scans
+- Source-based class organization
 
 ## Requirements
 
-- Python 3.8+
-- extractpbo tool in system PATH
+- Python 3.9+
+- extractpbo tool in system PATH (for PBO file support)
 - Read permissions for target directories
 
-## Usage
+## Architecture
 
-### Basic Scanning
+### Core Components
 
-```python
-from asset_scanner import AssetAPI
-from pathlib import Path
+- **ClassParser**: Parses raw class definitions with support for:
+  - Nested class structures
+  - Enum definitions
+  - Array properties
+  - Property inheritance
+  - PBO prefix handling
 
-# Initialize API with cache directory
-api = AssetAPI(Path("cache"))
+- **ClassScanner**: Handles file processing with:
+  - Multi-threaded PBO extraction
+  - Smart encoding detection
+  - Progress tracking
+  - Source tracking
+  - Error handling
 
-# Scan a directory
-result = api.scan_directory(Path("@mod"))
+- **ClassAPI**: High-level interface providing:
+  - Thread-safe caching
+  - Batch operations
+  - Validation
+  - Search capabilities
+  - Progress monitoring
 
-# Get all assets
-assets = api.get_all_assets()
+### Data Model
 
-# Find assets by extension
-textures = api.find_by_extension(".paa")
+- **ClassInfo**: Core class representation
+  ```python
+  class ClassInfo:
+      name: str                       # Class name
+      parent: Optional[str]           # Parent class name
+      properties: Dict[str, str]      # Direct properties
+      inherited_properties: Dict      # Properties from parent
+      children: Set[str]             # Direct child classes
+      file_path: Path                # Source file
+      source: str                    # Origin PBO/file
+      type: str                      # 'class' or 'enum'
+  ```
 
-# Search with pattern
-configs = api.find_by_pattern(r"config\.cpp$")
-```
+- **ClassHierarchy**: Inheritance tree representation
+  ```python
+  class ClassHierarchy:
+      classes: Dict[str, ClassInfo]   # All classes
+      root_classes: Set[str]          # Classes without parents
+      source: str                     # Source identifier
+      invalid_classes: Set[str]       # Classes with errors
+  ```
 
-### Asset Management
+### Caching System
 
-```python
-# Get asset by path
-asset = api.get_asset("@mod/textures/example.paa")
+- Thread-safe class hierarchy caching
+- Immutable cache containers
+- Configurable cache age and size
+- Smart cache invalidation
+- Cache hit statistics
 
-# Find related assets
-if asset:
-    related = api.find_related(asset)
+### Validation System
 
-# Check for duplicates
-duplicates = api.find_duplicates()
+- Parent class validation
+- Property inheritance verification
+- Duplicate detection
+- Cycle detection
+- Similar class suggestions
 
-# Get source-specific assets
-mod_assets = api.get_assets_by_source("@mod")
-```
+### Processing Pipeline 
 
-### Batch Operations
+1. **Scan Phase**
+   - Find PBO/code files
+   - Extract content
+   - Parse class definitions
+   - Track source information
 
-```python
-# Verify multiple assets
-paths = ["texture1.paa", "model1.p3d"]
-results = api.verify_assets(paths)
+2. **Analysis Phase**  
+   - Build inheritance trees
+   - Validate relationships
+   - Detect cycles
+   - Resolve properties
 
-# Find missing assets
-missing = api.find_missing(paths)
+3. **Cache Phase**
+   - Store processed hierarchies
+   - Track timestamps
+   - Handle invalidation
+   - Provide lookups
 
-# Process assets in batches
-for batch in api.iter_assets(batch_size=1000):
-    process_assets(batch)
-```
+## Advanced Usage
 
-### Path Handling
+### Custom Validation
 
-```python
-# Normalize a path
-normalized_path = api.normalize_path("@mod\\textures\\example.paa")
+## Command-Line Usage
 
-# Check if a path has a PBO prefix
-has_prefix = api.has_pbo_prefix(normalized_path)
-```
+### Basic Scanning Script
 
-### Game Folder Structure
+## Usage Examples
 
-```python
-# Scan game folder structure
-game_assets = api.scan_game_folder_structure(Path("game_folder"))
-```
-
-### Asset Properties
-
-Each Asset object contains:
-- path: Normalized path
-- source: Origin mod/source
-- last_scan: Timestamp
-- has_prefix: PBO prefix status
-- pbo_path: Optional PBO container path
-
-## Development
-
-### Project Structure
-
-- `api.py`: Main API interface
-- `scanner.py`: Core scanning logic
-- `cache.py`: Caching implementation
-- `models.py`: Data models
-
-### Key Classes
-
-- `AssetAPI`: Main interface for all operations
-- `AssetScanner`: Core scanning engine
-- `AssetCache`: Immutable cache container
-- `AssetCacheManager`: Thread-safe cache access
+## Contributing
+1. Fork the repository on GitHub.
+2. Create a feature branch for your changes.
+3. Submit a pull request once tests pass.
 
 ## License
-
-MIT License
+This project is licensed under the MIT License.
