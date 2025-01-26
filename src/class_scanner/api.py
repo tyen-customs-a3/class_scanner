@@ -20,7 +20,7 @@ class ClassAPIConfig:
     scan_timeout: int = 30
     max_pbo_size: int = 100_000_000
     parallel_scan: bool = True
-    max_workers: int = 4
+    max_workers: int = 60
     cache_max_age: int = 3600
 
     def __post_init__(self):
