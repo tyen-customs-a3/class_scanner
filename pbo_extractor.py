@@ -8,9 +8,10 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
+
 class PboExtractor:
     """Helper class for PBO file operations using extractpbo tool"""
-    
+
     BIN_FILE_TYPES = {
         'config.bin': 'config.cpp',
         'model.bin': 'model.cfg',
@@ -19,18 +20,18 @@ class PboExtractor:
         'script.bin': 'script.cpp',
         'default': '.txt'
     }
-    
+
     CODE_EXTENSIONS = {'.cpp', '.hpp', '.h', '.txt'}
-    
+
     def __init__(self, timeout: int = 30):
         """Initialize PBO extractor with timeout
-        
+
         Args:
             timeout: Maximum time in seconds to wait for extractpbo operations
         """
         self.timeout = timeout
         self._temp_base = Path(tempfile.gettempdir()) / "pbo_extractor"
-        self._temp_dirs = set()
+        self._temp_dirs: Set[Path] = set()
 
     def __del__(self):
         """Cleanup temporary resources"""
@@ -49,7 +50,7 @@ class PboExtractor:
     def _create_temp_dir(self) -> Path:
         """Create a unique temporary directory for extraction"""
         self._temp_base.mkdir(parents=True, exist_ok=True)
-        
+
         temp_dir = self._temp_base / f"extract_{uuid.uuid4().hex}"
         temp_dir.mkdir(parents=True)
         self._temp_dirs.add(temp_dir)
@@ -57,10 +58,10 @@ class PboExtractor:
 
     def list_contents(self, pbo_path: Path) -> Tuple[int, str, str]:
         """List contents of PBO file
-        
+
         Args:
             pbo_path: Path to PBO file
-            
+
         Returns:
             Tuple of (return_code, stdout, stderr)
         """
@@ -86,7 +87,7 @@ class PboExtractor:
         if file_filter:
             cmd.append(f'-F={file_filter}')
         cmd.extend([str(pbo_path), str(output_dir)])
-        
+
         logger.debug(f"Running extractpbo command: {' '.join(cmd)}")
         result = subprocess.run(
             cmd,
@@ -94,10 +95,10 @@ class PboExtractor:
             text=True,
             timeout=self.timeout
         )
-        
+
         if result.returncode == 0:
             self._process_extracted_bins(output_dir)
-            
+
         return result.returncode, result.stdout, result.stderr
 
     def _process_extracted_bins(self, output_dir: Path) -> None:
@@ -113,10 +114,10 @@ class PboExtractor:
 
     def extract_prefix(self, stdout: str) -> Optional[str]:
         """Extract the prefix= line from extractpbo output
-        
+
         Args:
             stdout: Output from extractpbo command
-            
+
         Returns:
             Prefix string if found, None otherwise
         """
@@ -132,36 +133,36 @@ class PboExtractor:
         try:
             temp_dir = self._create_temp_dir()
             logger.debug(f"Extracting PBO {pbo_path} to {temp_dir}")
-            
+
             cmd = ['extractpbo', '-P', '-S', '-Y', '-D']
-            
+
             extensions = ['.cpp'] + [ext for ext in self.CODE_EXTENSIONS if ext != '.cpp']
             extensions.append('.bin')
             extensions.append('.txt')
             extensions_filter = ','.join(f'*.{ext.lstrip(".")}' for ext in extensions)
             cmd.extend([f'-F={extensions_filter}'])
-            
+
             cmd.extend([str(pbo_path), str(temp_dir)])
-            
+
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=self.timeout
             )
-            
+
             if result.returncode != 0:
                 logger.warning(f"PBO extraction warning for {pbo_path}: {result.stderr}")
 
             code_files = {}
-            
+
             for ext in self.CODE_EXTENSIONS | {'.bin', '.txt'}:
                 for file_path in temp_dir.rglob(f'*{ext}'):
                     try:
                         if file_path.suffix == '.bin':
                             if new_name := self._detect_bin_type(file_path.name):
                                 file_path = file_path.with_name(new_name)
-                        
+
                         if file_path.exists():
                             content = None
                             for encoding in ['utf-8-sig', 'utf-8', 'windows-1252', 'latin1']:
@@ -170,7 +171,7 @@ class PboExtractor:
                                     break
                                 except UnicodeDecodeError:
                                     continue
-                            
+
                             if content is not None:
                                 relative_path = file_path.relative_to(temp_dir)
                                 code_files[str(relative_path)] = content
@@ -184,7 +185,7 @@ class PboExtractor:
         except Exception as e:
             logger.error(f"Error extracting code files from {pbo_path}: {e}")
             return {}
-            
+
         finally:
             if temp_dir and temp_dir in self._temp_dirs:
                 try:

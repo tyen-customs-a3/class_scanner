@@ -7,6 +7,7 @@ from pbo_extractor import PboExtractor
 
 logger = logging.getLogger(__name__)
 
+
 class ClassScanner:
     """Simplified class scanner that only extracts basic class data"""
 
@@ -14,7 +15,7 @@ class ClassScanner:
         self.extractor = PboExtractor()
         self.parser = ClassParser()
 
-    def scan_directory(self, directory: Path) -> Dict[str, PboClasses]: # hint Dict[str, PboClasses]
+    def scan_directory(self, directory: Path) -> Dict[str, PboClasses]:
         """Scan a directory for PBO files and extract classes"""
         results = {}
 
@@ -28,7 +29,7 @@ class ClassScanner:
 
         return results
 
-    def scan_pbo(self, pbo_path: Path) -> Optional[PboClasses]: # hint Optional[PboClasses]
+    def scan_pbo(self, pbo_path: Path) -> Optional[PboClasses]:
         """Extract and parse classes from a single PBO file"""
         try:
             code_files = self.extractor.extract_code_files(pbo_path)
@@ -39,18 +40,15 @@ class ClassScanner:
                     continue
 
                 class_defs = self.parser.parse_class_definitions(content)
-                # Process all sections including global classes
                 for section_name, section in class_defs.items():
                     for name, data in section.items():
                         if not name:
                             continue
-                            
-                        # Clean class name
+
                         clean_name = name.rstrip('{;}') if isinstance(name, str) else name
                         if clean_name.endswith('{}'):
                             clean_name = clean_name[:-2]
-                        
-                        # Clean parent name
+
                         parent = data.get('parent', '')
                         clean_parent = parent.rstrip('{;}') if isinstance(parent, str) else ''
                         if clean_parent.endswith('{}'):

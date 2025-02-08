@@ -3,19 +3,20 @@ from pathlib import Path
 from typing import Iterator
 from contextlib import contextmanager
 
+
 class PboProcessor:
     def __init__(self, config):
         self.config = config
         self._temp_dir = Path('temp')
-    
+
     @contextmanager
     def _temp_extraction(self, pbo_path: Path):
         """Context manager for temporary PBO extraction"""
         try:
             yield self._temp_dir
         finally:
-            pass  # Add cleanup logic here if needed
-        
+            pass
+
     def extract_configs(self, pbo_path: Path) -> Iterator[Path]:
         """Extract and yield paths to config files"""
         try:
