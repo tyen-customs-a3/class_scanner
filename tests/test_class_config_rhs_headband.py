@@ -1,15 +1,14 @@
 import logging
 import pytest
-from pathlib import Path
+from src.parser.class_parser import ClassParser
 
-from src.parser import ClassParser
 from .conftest import TEST_DATA
 
 logger = logging.getLogger(__name__)
 
 @pytest.fixture
 def headband_config() -> str:
-    path = TEST_DATA['headband']['config_path']
+    path = TEST_DATA['headband']['source_path']
     with open(path) as f:
         return f.read()
 

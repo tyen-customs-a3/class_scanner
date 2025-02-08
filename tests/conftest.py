@@ -5,41 +5,49 @@ from typing import Dict, TypedDict
 import sys
 from pathlib import Path
 
+from src.parser.class_parser import ClassParser
+
 # Add parent directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 from api import API
-from src.parser import ClassParser
+from src.parser.code_parser import CodeParser  # Updated import path
 
 # Core test configuration 
 ROOT_DIR = Path(__file__).parent.parent
 TEST_DATA_ROOT = ROOT_DIR / 'tests' / 'data'
 
-class ConfigTestData(TypedDict):
-    """Type definition for config test data"""
+class CodeTestData(TypedDict):  # Renamed from ConfigTestData
+    """Type definition for code test data"""
     path: Path
-    config_path: Path
+    source_path: Path  # Renamed from config_path
     source: str
     expected_classes: Dict[str, Dict[str, str]]
 
-# Test data using config.cpp files
-TEST_DATA: Dict[str, ConfigTestData] = {
+# Test data using source code files
+TEST_DATA: Dict[str, CodeTestData] = {
     'mirror': {
         'path': TEST_DATA_ROOT / '@tc_mirrorform/addons/mirrorform.pbo',
-        'config_path': TEST_DATA_ROOT / '@tc_mirrorform/addons/mirrorform/tc/mirrorform/config.cpp',
+        'source_path': TEST_DATA_ROOT / '@tc_mirrorform/addons/mirrorform/tc/mirrorform/config.cpp',
         'source': 'tc_mirrorform',
         'expected_classes': {
-            'TC_MIRROR': {'parent': ''},
-            'TC_U_Mirror_Base': {'parent': 'Uniform_Base'},
-            'TC_U_Mirror_1': {'parent': 'TC_U_Mirror_Base'},
-            'TC_B_Mirror_Base': {'parent': 'B_Soldier_base_F'},
-            'TC_B_Mirror_1': {'parent': 'TC_B_Mirror_Base'}
+            'CfgPatches': {'parent': ''},
+            'CfgWeapons': {'parent': ''},
+            'CfgVehicles': {'parent': ''},
+            'TC_MIRROR': {'parent': '', 'section': 'CfgPatches'},
+            'UniformItem': {'parent': ''},
+            'Uniform_Base': {'parent': ''},
+            'TC_U_Mirror_Base': {'parent': 'Uniform_Base', 'section': 'CfgWeapons'},
+            'TC_U_Mirror_1': {'parent': 'TC_U_Mirror_Base', 'section': 'CfgWeapons'},
+            'B_Soldier_base_F': {'parent': ''},
+            'TC_B_Mirror_Base': {'parent': 'B_Soldier_base_F', 'section': 'CfgVehicles'},
+            'TC_B_Mirror_1': {'parent': 'TC_B_Mirror_Base', 'section': 'CfgVehicles'}
         }
     },
     'headband': {
         'path': TEST_DATA_ROOT / '@tc_rhs_headband/addons/rhs_headband.pbo',
-        'config_path': TEST_DATA_ROOT / '@tc_rhs_headband/addons/rhs_headband/tc/rhs_headband/config.cpp',
+        'source_path': TEST_DATA_ROOT / '@tc_rhs_headband/addons/rhs_headband/tc/rhs_headband/config.cpp',
         'source': 'tc_rhs_headband',
         'expected_classes': {
             'tc_rhs_headband': {'parent': 'rhs_headband'},
@@ -49,7 +57,7 @@ TEST_DATA: Dict[str, ConfigTestData] = {
     },
     'em_babe': {
         'path': TEST_DATA_ROOT / '@em/addons/babe_em.pbo',
-        'config_path': TEST_DATA_ROOT / '@em/addons/babe_em/babe/babe_em/config.cpp',
+        'source_path': TEST_DATA_ROOT / '@em/addons/babe_em/babe/babe_em/config.cpp',
         'source': 'em',
         'expected_classes': {
             'BaBe_EM': {'parent': ''},
@@ -74,7 +82,7 @@ def setup_logging() -> None:
     )
 
 @pytest.fixture
-def sample_configs() -> Dict[str, ConfigTestData]:
+def sample_configs() -> Dict[str, CodeTestData]:
     """Provide test config data"""
     return TEST_DATA
 

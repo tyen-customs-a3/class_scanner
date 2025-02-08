@@ -1,8 +1,9 @@
 import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch
-
+from typing import Dict
 from src.models import ClassData, PboClasses
+from api import API, Scanner
 
 
 @pytest.fixture
@@ -24,6 +25,26 @@ def mock_pbo_classes():
         },
         source="test.pbo"
     )
+
+
+@pytest.fixture
+def api():
+    """Create API instance for testing"""
+    return API()
+
+@pytest.fixture
+def test_dir(tmp_path):
+    """Create test directory with sample PBO files"""
+    test_dir = tmp_path / "test_pbos"
+    test_dir.mkdir()
+    
+    # Create sample PBO files
+    (test_dir / "test1.pbo").touch()
+    (test_dir / "test2.pbo").touch()
+    (test_dir / "test3.pbo").touch()
+    (test_dir / "notapbo.txt").touch()
+    
+    return test_dir
 
 
 def test_scan_directory_empty(api, tmp_path):
@@ -110,3 +131,123 @@ def test_clear_cache(api, tmp_path, mock_pbo_classes):
         # Should scan again after cache clear
         api.scan_directory(tmp_path)
         assert mock_scan.call_count == 2
+
+
+def test_api_initialization(api):
+    """Test API class initialization"""
+    assert isinstance(api.scanner, Scanner)
+    assert isinstance(api._cache, dict)
+    assert api._progress_callback is None
+
+def test_set_progress_callback(api):
+    """Test setting progress callback"""
+    def callback(msg): pass
+    
+    api.set_progress_callback(callback)
+    assert api._progress_callback == callback
+
+def test_clear_cache(api, test_dir):
+    """Test cache clearing functionality"""
+    # Populate cache
+    api.scan_directory(test_dir)
+    assert len(api._cache) > 0
+    
+    # Clear cache
+    api.clear_cache()
+    assert len(api._cache) == 0
+
+def test_scan_directory_basic(api, test_dir):
+    """Test basic directory scanning"""
+    results = api.scan_directory(test_dir)
+    
+    assert len(results) == 3  # Should find 3 PBO files
+    assert all(str(test_dir) in path for path in results.keys())
+    assert all(isinstance(result, PboClasses) for result in results.values())
+
+def test_scan_directory_with_limit(api, test_dir):
+    """Test directory scanning with file limit"""
+    results = api.scan_directory(test_dir, file_limit=2)
+    assert len(results) == 2
+
+def test_scan_directory_caching(api, test_dir):
+    """Test that scanning caches results"""
+    # First scan
+    first_results = api.scan_directory(test_dir)
+    cache_size = len(api._cache)
+    
+    # Second scan
+    second_results = api.scan_directory(test_dir)
+    
+    assert len(api._cache) == cache_size
+    assert first_results == second_results
+
+def test_progress_callback_execution(api, test_dir):
+    """Test progress callback is called correctly"""
+    callback_calls = []
+    def test_callback(msg):
+        callback_calls.append(msg)
+    
+    api.set_progress_callback(test_callback)
+    api.scan_directory(test_dir)
+    
+    assert len(callback_calls) == 3  # Should be called for each PBO
+    assert all('.pbo' in call for call in callback_calls)
+
+def test_scan_nonexistent_directory(api):
+    """Test scanning nonexistent directory"""
+    results = api.scan_directory(Path("/nonexistent/path"))
+    assert len(results) == 0
+
+def test_scan_empty_directory(api, tmp_path):
+    """Test scanning empty directory"""
+    empty_dir = tmp_path / "empty"
+    empty_dir.mkdir()
+    results = api.scan_directory(empty_dir)
+    assert len(results) == 0
+
+def test_scan_directory_with_invalid_pbos(api, test_dir):
+    """Test scanning directory with invalid PBO files"""
+    # Create invalid PBO file
+    invalid_pbo = test_dir / "invalid.pbo"
+    invalid_pbo.write_bytes(b"Not a valid PBO file")
+    
+    results = api.scan_directory(test_dir)
+    assert str(invalid_pbo) not in results
+
+def test_cache_persistence(api, test_dir):
+    """Test that cache persists between scans"""
+    # First scan to populate cache
+    api.scan_directory(test_dir)
+    initial_cache = api._cache.copy()
+    
+    # Modify a file timestamp but keep cache
+    test_pbo = next(test_dir.glob("*.pbo"))
+    test_pbo.touch()
+    
+    # Second scan should use cached results
+    results = api.scan_directory(test_dir)
+    assert api._cache == initial_cache
+    assert all(str(test_dir) in path for path in results.keys())
+
+def test_partial_directory_scan(api, test_dir):
+    """Test scanning directory with some files already cached"""
+    # First scan only some files
+    first_results = api.scan_directory(test_dir, file_limit=2)
+    cached_files = set(api._cache.keys())
+    
+    # Second scan all files
+    all_results = api.scan_directory(test_dir)
+    
+    # Verify cached results were reused
+    assert all(path in all_results for path in cached_files)
+    assert len(all_results) > len(first_results)
+
+def test_scanner_none_result_handling(api, test_dir):
+    """Test handling of None results from scanner"""
+    class NoneScanner(Scanner):
+        def scan_pbo(self, path):
+            return None
+    
+    api.scanner = NoneScanner()
+    results = api.scan_directory(test_dir)
+    assert len(results) == 0

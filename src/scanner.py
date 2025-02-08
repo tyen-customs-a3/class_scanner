@@ -1,9 +1,11 @@
 import logging
 from pathlib import Path
-from typing import Dict, Optional
-from .parser import ClassParser
+from typing import Dict, Optional, cast
+
+from src.parser.class_parser import ClassParser
+from src.pbo.pbo_extractor import PboExtractor
 from .models import ClassData, PboClasses
-from .pbo_extractor import PboExtractor
+from .constants import ConfigSectionName, CFG_GLOBAL
 
 logger = logging.getLogger(__name__)
 
@@ -33,43 +35,58 @@ class ClassScanner:
         """Extract and parse classes from a single PBO file"""
         try:
             code_files = self.extractor.extract_code_files(pbo_path)
-            all_classes = {}
+            all_classes: Dict[str, ClassData] = {}
 
             for filepath, content in code_files.items():
                 if not filepath.lower().endswith(('.cpp', '.hpp')):
                     continue
 
                 class_defs = self.parser.parse_class_definitions(content)
-                for section_name, section in class_defs.items():
-                    for name, data in section.items():
-                        if not name:
-                            continue
-
-                        clean_name = name.rstrip('{;}') if isinstance(name, str) else name
-                        if clean_name.endswith('{}'):
-                            clean_name = clean_name[:-2]
-
-                        parent = data.get('parent', '')
-                        clean_parent = parent.rstrip('{;}') if isinstance(parent, str) else ''
-                        if clean_parent.endswith('{}'):
-                            clean_parent = clean_parent[:-2]
-
-                        if clean_name:
-                            all_classes[clean_name] = ClassData(
-                                name=clean_name,
-                                parent=clean_parent,
-                                properties=data.get('properties', {}),
-                                source_file=Path(filepath)
-                            )
+                
+                # Add top-level section classes first
+                for section_name, section in cast(Dict[ConfigSectionName, Dict], class_defs).items():
+                    if section_name != CFG_GLOBAL:
+                        # Add the section itself as a class
+                        all_classes[section_name] = ClassData(
+                            name=section_name,
+                            parent='',
+                            properties={},
+                            source_file=Path(filepath)
+                        )
+                        
+                        # Process classes in the section
+                        for name, data in section.items():
+                            clean_name = self._clean_class_name(str(name))
+                            if clean_name:
+                                all_classes[clean_name] = ClassData(
+                                    name=clean_name,
+                                    parent=self._clean_class_name(str(data.get('parent', ''))),
+                                    properties=data.get('properties', {}),
+                                    source_file=Path(filepath)
+                                )
+                
+                # Process global classes
+                for name, data in class_defs[CFG_GLOBAL].items():
+                    clean_name = self._clean_class_name(str(name))
+                    if clean_name:
+                        all_classes[clean_name] = ClassData(
+                            name=clean_name,
+                            parent=self._clean_class_name(str(data.get('parent', ''))),
+                            properties=data.get('properties', {}),
+                            source_file=Path(filepath)
+                        )
 
             if all_classes:
-                return PboClasses(
-                    classes=all_classes,
-                    source=str(pbo_path)
-                )
+                return PboClasses(classes=all_classes, source=str(pbo_path))
 
         except Exception as e:
             logger.error(f"Error processing {pbo_path}: {e}")
             logger.debug("Exception details:", exc_info=True)
 
         return None
+
+    def _clean_class_name(self, name: str) -> str:
+        """Clean class name of any artifacts"""
+        if not name:
+            return ''
+        return name.rstrip('{;}').strip()
