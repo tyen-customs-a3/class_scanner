@@ -1,9 +1,9 @@
 import logging
 from pathlib import Path
 from typing import Dict, Optional
-from parser import ClassParser
-from models import ClassData, PboClasses
-from pbo_extractor import PboExtractor
+from .parser import ClassParser
+from .models import ClassData, PboClasses
+from .pbo_extractor import PboExtractor
 
 logger = logging.getLogger(__name__)
 

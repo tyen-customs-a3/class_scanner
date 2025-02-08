@@ -2,8 +2,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from models import ClassData, PboClasses
-
+from src.models import ClassData, PboClasses
 
 
 @pytest.fixture

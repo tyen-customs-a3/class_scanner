@@ -2,8 +2,15 @@ import pytest
 import logging
 from pathlib import Path
 from typing import Dict, TypedDict
+import sys
+from pathlib import Path
+
+# Add parent directory to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+
 from api import API
-from parser import ClassParser
+from src.parser import ClassParser
 
 # Core test configuration 
 ROOT_DIR = Path(__file__).parent.parent

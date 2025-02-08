@@ -44,5 +44,7 @@ logs/
 # Operating System
 .DS_Store
 Thumbs.db
+
 config_analysis.txt
 temp/
+.mypy_cache/

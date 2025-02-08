@@ -1,6 +1,12 @@
 import pytest
 from pathlib import Path
-from scanner import ClassScanner
+import sys
+from pathlib import Path
+
+# Add parent directory to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.scanner import ClassScanner
 from .conftest import TEST_DATA
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 import logging
 import pytest
 from pathlib import Path
-from parser import ClassParser
+from src.parser import ClassParser
 from .conftest import TEST_DATA
 
 logger = logging.getLogger(__name__)

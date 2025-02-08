@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Dict, Callable, Optional
 
-from models import ClassData, PboClasses
+from src.models import ClassData, PboClasses
+
 
 
 class Scanner:
