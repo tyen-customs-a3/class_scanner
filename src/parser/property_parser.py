@@ -2,6 +2,8 @@ import logging
 import re
 from typing import Dict, List, Optional, Tuple
 
+from src.models.core import PropertyValueType
+
 from ..models import PropertyValue
 from src.parser.property_tokenizer import PropertyToken, PropertyTokenType, PropertyTokenizer
 from src.parser.property_types import PropertyTypeDetector
@@ -27,27 +29,52 @@ class PropertyParser:
 
         properties: Dict[str, PropertyValue] = {}
         
+        # Clean the block of nested class definitions
         cleaned_block = re.sub(r'class\s+\w+[^;]*{[^}]*}', '', block)
         
-        matches = self.property_pattern.finditer(cleaned_block)
-        for match in matches:
+        # Find array properties first
+        array_pattern = re.compile(r'(\w+)\[\]\s*=\s*({[^;]*});')
+        for match in array_pattern.finditer(cleaned_block):
             name = match.group(1)
-            raw_value = match.group(2)
+            array_content = match.group(2)
             
-            if raw_value.startswith('"') and raw_value.endswith('"'):
-                value = raw_value[1:-1]
-            else:
-                value = raw_value
-                
-            is_array = '[]' in match.group(0)
-            array_values = []
+            # Parse array values
+            values = self._parse_array_content(array_content)
             
             properties[name] = PropertyValue(
                 name=name,
-                raw_value=value,
-                is_array=is_array,
-                array_values=array_values
+                raw_value=array_content,
+                value_type=PropertyValueType.ARRAY,
+                is_array=True,
+                array_values=values
             )
+        
+        # Find non-array properties
+        simple_pattern = re.compile(r'(\w+)\s*=\s*("[^"]*"|[^;{\s]+);')
+        for match in simple_pattern.finditer(cleaned_block):
+            name = match.group(1)
+            if name not in properties:  # Don't override array properties
+                raw_value = match.group(2)
+                
+                if raw_value.startswith('"') and raw_value.endswith('"'):
+                    value = raw_value[1:-1]
+                    value_type = PropertyValueType.STRING
+                elif raw_value.lower() in ('true', 'false'):
+                    value = raw_value.lower()
+                    value_type = PropertyValueType.BOOLEAN
+                elif re.match(r'^-?\d+(\.\d+)?$', raw_value):
+                    value = raw_value
+                    value_type = PropertyValueType.NUMBER
+                else:
+                    value = raw_value
+                    value_type = PropertyValueType.IDENTIFIER
+                    
+                properties[name] = PropertyValue(
+                    name=name,
+                    raw_value=value,
+                    value_type=value_type,
+                    is_array=False
+                )
 
         logger.debug("Final properties: %s", properties)
         return properties
@@ -281,3 +308,45 @@ class PropertyParser:
                 parts.append(token.value)
 
         return "".join(parts)
+
+    def _parse_array_content(self, content: str) -> List[str]:
+        """Parse array content into list of values"""
+        if content.strip() == '{}':
+            return []
+            
+        # Remove outer braces
+        content = content.strip()[1:-1].strip()
+        
+        values = []
+        current = ''
+        depth = 0
+        in_string = False
+        
+        for char in content:
+            if char == '"' and not current.endswith('\\'):
+                in_string = not in_string
+                current += char
+            elif not in_string and char == '{':
+                depth += 1
+                current += char
+            elif not in_string and char == '}':
+                depth -= 1
+                current += char
+            elif not in_string and char == ',' and depth == 0:
+                values.append(current.strip())
+                current = ''
+            else:
+                current += char
+                
+        if current:
+            values.append(current.strip())
+            
+        # Clean up the values
+        cleaned = []
+        for val in values:
+            val = val.strip()
+            if val.startswith('"') and val.endswith('"'):
+                val = val[1:-1]
+            cleaned.append(val)
+            
+        return cleaned

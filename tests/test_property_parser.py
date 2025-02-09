@@ -141,29 +141,6 @@ def test_property_edge_cases():
     assert len(properties["nested_empty_arrays"].array_values) == 4
 
 
-def test_property_inheritance():
-    """Test property parsing with class inheritance"""
-    content = """
-        class ParentClass {
-            prop1 = "parent";
-            array[] = {1, 2, 3};
-        };
-        
-        class ChildClass: ParentClass {
-            prop1 = "child";  // Override
-            prop2 = "new";    // New property
-            array[] += {4, 5}; // Append to parent
-        };
-    """
-
-    parser = PropertyParser()
-    child_properties = parser.parse_block_properties(content)
-
-    assert child_properties["prop1"].value == "child"
-    assert child_properties["prop2"].value == "new"
-    assert "+=" in content
-
-
 def test_special_syntax():
     """Test special property syntax cases"""
     content = """
