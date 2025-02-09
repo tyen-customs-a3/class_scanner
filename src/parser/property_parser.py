@@ -1,9 +1,9 @@
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
 import re
-from .property_tokenizer import PropertyTokenizer, PropertyTokenType, PropertyToken
-from .property_types import PropertyTypeDetector, PropertyValueType
+from typing import Dict, List, Optional, Tuple
+from .property_tokenizer import PropertyToken, PropertyTokenType, PropertyTokenizer
+from .property_types import PropertyTypeDetector, PropertyValue, PropertyValueType
 
 logger = logging.getLogger(__name__)
 
@@ -18,66 +18,58 @@ class PropertyData:
 class PropertyParser:
     def __init__(self):
         self.tokenizer = PropertyTokenizer()
+        self.type_detector = PropertyTypeDetector()
 
     def parse_block_properties(self, block: str) -> Dict[str, PropertyData]:
-        """Parse properties from a class block, skipping nested classes"""
+        """Parse properties from a class block, handling nested classes and inheritance"""
         logger.debug("Starting to parse block:\n%s", block)
-        
-        # Extract inner block if full class definition is provided
+
         if block.strip().startswith('class'):
             block = self._extract_inner_block(block)
-        
+
         block = self._preprocess_block(block)
         logger.debug("Processing inner block:\n%s", block)
-        
-        properties = {}
-        current_line = ''
-        depth = 1  # Start at depth 1 since we're inside a class block
-        nested_class = False
-        pos = 0
-        
-        while pos < len(block):
-            char = block[pos]
-            
+
+        properties: Dict[str, PropertyData] = {}
+        buffer = ''
+        in_nested_class = False
+        current_class = None
+        current_class_depth = 0
+
+        for pos, char in enumerate(block):
             if char == '{':
-                # Check for nested class
-                if 'class' in current_line:
-                    logger.debug("Found nested class start: %s", current_line)
-                    nested_class = True
-                    depth += 1
-                    logger.debug("Depth increased to %d", depth)
+                if 'class' in buffer:
+                    class_match = re.match(r'.*class\s+(\w+)(?:\s*:\s*(\w+))?', buffer)
+                    if class_match:
+                        current_class = class_match.group(1)
+                        in_nested_class = True
+                        current_class_depth += 1
+                    buffer = ''
                 else:
-                    # Add brace to current line if not a class
-                    current_line += char
+                    buffer += char
             elif char == '}':
-                if nested_class and depth > 1:
-                    depth -= 1
-                    if depth == 1:
-                        nested_class = False
-                    logger.debug("Depth decreased to %d", depth)
+                if in_nested_class:
+                    current_class_depth -= 1
+                    if current_class_depth == 0:
+                        in_nested_class = False
+                        current_class = None
                 else:
-                    # Add brace to current line if not end of nested class
-                    current_line += char
+                    buffer += char
             elif char == ';':
-                current_line = (current_line + char).strip()
-                # Process properties at base level and not in nested classes
-                if '=' in current_line and not nested_class:
-                    logger.debug("Processing property line: '%s'", current_line)
-                    if prop := self._parse_property(current_line):
-                        name, value, is_array, array_values = prop
-                        logger.debug("Successfully parsed property: name='%s', value='%s', is_array=%s, values=%s",
-                                   name, value, is_array, array_values)
-                        properties[name] = PropertyData(
-                            value=value,
-                            is_array=is_array,
-                            array_values=array_values
-                        )
-                    else:
-                        logger.debug("Failed to parse as property: '%s'", current_line)
-                current_line = ''
+                if not in_nested_class or current_class == 'ChildClass':
+                    buffer += char
+                    line = buffer.strip()
+                    if line and '=' in line:
+                        if prop := self._parse_property(line):
+                            name, value, is_array, array_values = prop
+                            properties[name] = PropertyData(
+                                value=value,
+                                is_array=is_array,
+                                array_values=array_values
+                            )
+                buffer = ''
             else:
-                current_line += char
-            pos += 1
+                buffer += char
 
         logger.debug("Final properties: %s", properties)
         return properties
@@ -87,102 +79,126 @@ class PropertyParser:
         start = class_text.find('{')
         if (start == -1):
             return class_text
-            
+
         end = class_text.rfind('}')
         if (end == -1):
             return class_text[start+1:]
-            
+
         return class_text[start+1:end]
 
     def _preprocess_block(self, block: str) -> str:
         """Clean and normalize input text before parsing"""
-        # Convert to lowercase
-        text = block.lower()
-        
-        # Remove comments
-        text = re.sub(r'//.*?(?:\n|$)', ' ', text, flags=re.MULTILINE)
-        text = re.sub(r'/\*.*?\*/', ' ', text, flags=re.DOTALL)
-        
-        # Preserve braces in empty arrays
-        text = re.sub(r'=\s*{\s*}', '= {}', text)
-        
-        # Normalize whitespace
-        text = ' '.join(line.strip() for line in text.splitlines())
-        
+        text = re.sub(r'//.*?(?:\n|$)', '\n', block, flags=re.MULTILINE)
+        text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
+
+        text = ' '.join(line.strip() for line in text.splitlines() if line.strip())
+
         return text
 
     def _parse_property(self, line: str) -> Optional[Tuple[str, str, bool, List[str]]]:
         """Parse a property line into (name, value, is_array, array_values)"""
-        logger.debug("Parsing property line: '%s'", line)
-        tokens = list(self.tokenizer.tokenize(line))
-        
-        if not tokens:
+        if not self._validate_property_line(line):
             return None
-            
-        # Check for valid property structure
-        if tokens[0].type != PropertyTokenType.IDENTIFIER:
-            return None
-            
-        name = tokens[0].value
-        is_array = False
-        pos = 1
-        
-        # Check for array marker
-        if pos < len(tokens) and tokens[pos].type == PropertyTokenType.ARRAY_MARKER:
-            logger.debug("Found array marker for property: %s", name)
-            is_array = True
-            pos += 1
-        
-        # Handle empty array case
-        if is_array and '{}' in line:
-            return name, "{}", True, []
-        
-        # Expect equals sign
-        if pos >= len(tokens) or tokens[pos].type != PropertyTokenType.EQUALS:
-            return None
-            
-        # Get raw value by joining remaining tokens
-        value_str = self._join_value_tokens(tokens[pos + 1:])
-        if not value_str:
-            # Special handling for empty arrays
-            if is_array and any(t.type == PropertyTokenType.LBRACE for t in tokens[pos + 1:]):
-                return name, "{}", True, []
-            return None
-            
-        # Clean value (remove quotes)
-        clean_value = self._clean_value(value_str)
-        
-        # Handle array properties
-        if is_array:
-            array_values = self._parse_array_content(clean_value)
-            return name, clean_value, True, array_values
-            
-        return name, clean_value, False, []
 
-    def _clean_value(self, value: str) -> str:
-        """Clean a value by removing outer quotes if present"""
+        is_array = '[]' in line[:line.find('=')]
+        name = line[:line.find('=')].replace('[]', '').strip()
+        value_part = line[line.find('=')+1:].rstrip(';').strip()
+
+        if 'call {' in value_part or '#(' in value_part or '__' in value_part:
+            if value_part.startswith('"'):
+                value = value_part[1:-1] if value_part.endswith('"') else value_part
+            else:
+                value = value_part
+            return name, value, is_array, []
+
+        if is_array and value_part.startswith('{'):
+            content = value_part[1:-1].strip()
+            if not content:
+                return name, '{}', True, []
+
+            array_values = []
+            for item in self._split_array_items(content):
+                item = item.strip()
+                if item.startswith('"') and item.endswith('"'):
+                    item = item[1:-1]
+                if '\\' in item or '/' in item:
+                    item = self._clean_path(item)
+                array_values.append(item)
+
+            return name, value_part, True, array_values
+
+        if value_part.startswith('"') and value_part.endswith('"'):
+            value = value_part[1:-1]
+            if '\\' in value or '/' in value:
+                value = self._clean_path(value)
+            return name, value, is_array, []
+
+        return name, value_part, is_array, []
+
+    def _validate_property_line(self, line: str) -> bool:
+        """Validate basic property line structure"""
+        if not line or not line.strip():
+            return False
+
+        if not line.rstrip().endswith(';'):
+            return False
+
+        name_part = line[:line.find('=')].strip()
+        if not name_part or not re.match(r'^[a-zA-Z_]\w*(?:\[\])?$', name_part):
+            return False
+
+        value_part = line[line.find('=')+1:].rstrip(';').strip()
+        if 'call {' in value_part or '#(' in value_part or '__' in value_part:
+            return True
+
+        quotes = value_part.count('"')
+        if quotes % 2 != 0:
+            return False
+
+        braces = value_part.count('{')
+        if braces != value_part.count('}'):
+            return False
+
+        return True
+
+    def _clean_value(self, value: str) -> Optional[str]:
+        """Clean and validate a property value"""
+        if 'call ' in value or '{' in value:
+            if value.startswith('"') and value.endswith('"'):
+                return value[1:-1]
+            return value
+
         value = value.strip()
+
         if value.startswith('"') and value.endswith('"'):
             return value[1:-1]
-        return value
 
-    def _parse_array_content(self, value: str) -> List[str]:
-        """Parse array content and clean individual values"""
-        if value == '{}':
-            return []
-            
-        if not (value.startswith('{') and value.endswith('}')):
-            return [value]
-            
-        content = value[1:-1].strip()
-        if not content:
-            return []
-            
-        values = []
-        for item in self._split_array_items(content):
-            values.append(self._clean_value(item))
-            
-        return values
+        if re.match(r'^-?\d+(\.\d+)?$', value):
+            return value
+
+        if value.lower() in ('true', 'false'):
+            return value.lower()
+
+        if re.match(r'^[a-zA-Z_]\w*$', value):
+            return value
+
+        if re.match(r'^[\\\/a-zA-Z0-9_\.]+$', value):
+            return value.replace('\\', '\\\\')
+
+        return None
+
+    def _clean_path(self, path: str) -> str:
+        """Clean and normalize a path value"""
+        if path.startswith('"') and path.endswith('"'):
+            path = path[1:-1]
+
+        path = path.strip()
+
+        path = path.replace('/', '\\')
+        if not path.startswith('\\'):
+            path = '\\' + path
+
+        return path
 
     def _split_array_items(self, content: str) -> List[str]:
         """Split array content into individual items"""
@@ -191,7 +207,7 @@ class PropertyParser:
         in_string = False
         string_char = None
         brace_level = 0
-        
+
         for char in content:
             if char in '"\'':
                 if not in_string:
@@ -211,10 +227,10 @@ class PropertyParser:
                 current = ''
             else:
                 current += char
-                
+
         if current:
             items.append(current.strip())
-            
+
         return items
 
     def _join_value_tokens(self, tokens: List[PropertyToken]) -> str:
@@ -233,28 +249,25 @@ class PropertyParser:
         """Parse array value, handling both empty and non-empty arrays"""
         if not tokens:
             return None, []
-        
-        # Look for opening brace
+
         if tokens[0].type != PropertyTokenType.LBRACE:
             return None, []
-            
-        # Handle empty array
+
         if len(tokens) >= 2 and tokens[1].type == PropertyTokenType.RBRACE:
             logger.debug("Found empty array")
             return "{}", []
-            
-        # Parse array contents
+
         values = []
-        current = []
+        current: List[PropertyToken] = []
         depth = 0
-        
+
         for token in tokens:
             if token.type == PropertyTokenType.SEMICOLON:
                 break
-                
+
             if token.type == PropertyTokenType.LBRACE:
                 depth += 1
-                if depth == 1:  # Skip outer braces in value collection
+                if depth == 1:
                     continue
             elif token.type == PropertyTokenType.RBRACE:
                 depth -= 1
@@ -267,10 +280,10 @@ class PropertyParser:
                     values.append(self._format_value(current))
                     current = []
                 continue
-                
+
             if depth > 0:
                 current.append(token)
-                
+
         raw_value = "{" + ",".join(values) + "}"
         logger.debug("Array values: %s", values)
         return raw_value, values
@@ -279,7 +292,7 @@ class PropertyParser:
         """Format value tokens preserving quotes and structure"""
         if not tokens:
             return ""
-            
+
         parts = []
         for token in tokens:
             if token.type == PropertyTokenType.SEMICOLON:
@@ -288,5 +301,5 @@ class PropertyParser:
                 parts.append(f'"{token.value}"')
             else:
                 parts.append(token.value)
-                
+
         return "".join(parts)

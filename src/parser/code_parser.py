@@ -1,6 +1,8 @@
 import re
 from typing import List, Dict, Any
-from .tokenizer import Token, TokenType, CodeTokenizer
+
+from src.parser.tokenizer import CodeTokenizer, Token, TokenType
+
 
 class CodeParser:
     def __init__(self):

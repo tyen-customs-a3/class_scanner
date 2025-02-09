@@ -25,18 +25,17 @@ class PropertyToken:
 
 class PropertyTokenizer:
     def tokenize(self, text: str) -> Iterator[PropertyToken]:
+        """Tokenize property text into a stream of tokens"""
         pos = 0
         text_len = len(text)
-        
+
         while pos < text_len:
             char = text[pos]
-            
-            # Skip whitespace
+
             if char.isspace():
                 pos += 1
                 continue
-                
-            # Handle special characters
+
             if char == '[':
                 if pos + 1 < text_len and text[pos + 1] == ']':
                     yield PropertyToken(PropertyTokenType.ARRAY_MARKER, '[]', pos)
@@ -72,47 +71,54 @@ class PropertyTokenizer:
                     yield PropertyToken(PropertyTokenType.IDENTIFIER, identifier, pos)
                 pos = new_pos
                 continue
-            
+
             pos += 1
 
     def _extract_string(self, text: str, start: int) -> tuple[Optional[str], int]:
         quote = text[start]
         pos = start + 1
         value = ''
-        
+
         while pos < len(text):
             char = text[pos]
             if char == quote:
                 return value, pos + 1
             value += char
             pos += 1
-            
+
         return None, start + 1
 
     def _extract_number(self, text: str, start: int) -> tuple[Optional[str], int]:
+        """Extract numeric values including negative numbers"""
         pos = start
         value = ''
-        has_decimal = False
-        
+
+        if text[pos] == '-':
+            value = '-'
+            pos += 1
+
         while pos < len(text):
             char = text[pos]
             if char.isdigit():
                 value += char
-            elif char == '.' and not has_decimal:
+            elif char == '.' and '.' not in value:
                 value += char
-                has_decimal = True
             else:
                 break
             pos += 1
-            
-        return value if value else None, pos
+
+        return value if len(value) > 1 else None, pos
 
     def _extract_identifier(self, text: str, start: int) -> tuple[str, int]:
         pos = start
         value = ''
-        
-        while pos < len(text) and (text[pos].isalnum() or text[pos] == '_'):
-            value += text[pos]
+
+        while pos < len(text):
+            char = text[pos]
+            if char.isalnum() or char in '_\\/.':
+                value += char
+            else:
+                break
             pos += 1
-            
+
         return value, pos
