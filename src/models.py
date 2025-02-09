@@ -1,22 +1,22 @@
-from .config import ClassInfo, PropertyValue
-from .core import (
+from dataclasses import dataclass, field, asdict
+from typing import Dict, Any
+from pathlib import Path
+from .models.core import (
     CacheConfig,
     ScannerConfig,
     StorageConfig,
     PboInfo,
     ClassData,
-    PboClasses,
-    PropertyData
+    PboClasses
 )
 
+
+# Re-export all core models
 __all__ = [
-    'ClassInfo',
-    'PropertyValue',
     'CacheConfig',
     'ScannerConfig',
     'StorageConfig',
     'PboInfo',
     'ClassData',
-    'PboClasses',
-    'PropertyData'
+    'PboClasses'
 ]

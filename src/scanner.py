@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict, Optional, cast
+from typing import Dict, Optional, cast, Callable, Union, List
 
 from src.parser.class_parser import ClassParser
 from src.pbo.pbo_extractor import PboExtractor
@@ -16,9 +16,11 @@ class ClassScanner:
     def __init__(self):
         self.extractor = PboExtractor()
         self.parser = ClassParser()
+        self.progress_callback: Optional[Callable[[Union[str, Path]], None]] = None
 
-    def scan_directory(self, directory: Path) -> Dict[str, PboClasses]:
+    def scan_directory(self, directory: Union[str, Path]) -> Dict[str, PboClasses]:
         """Scan a directory for PBO files and extract classes"""
+        directory = Path(directory)
         results = {}
 
         for pbo_path in directory.rglob('*.pbo'):
@@ -26,6 +28,8 @@ class ClassScanner:
                 pbo_result = self.scan_pbo(pbo_path)
                 if pbo_result and pbo_result.classes:
                     results[str(pbo_path)] = pbo_result
+                if self.progress_callback:
+                    self.progress_callback(str(pbo_path))
             except Exception as e:
                 logger.error(f"Failed to scan {pbo_path}: {e}")
 
