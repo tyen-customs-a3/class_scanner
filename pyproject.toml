@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "class_scanner"
+version = "0.1.0"
+description = "Class scanner for game mods"
+authors = [{name = "Your Name"}]
+readme = "README.md"
+requires-python = ">=3.8"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/class_scanner"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "src",
+]
+testpaths = ["tests"]

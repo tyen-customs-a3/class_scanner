@@ -8,7 +8,7 @@ from rich.progress import Progress
 from rich.table import Table
 from threading import Lock
 from typing import Dict, Any, List, Optional
-from src.scanner import ClassScanner
+from class_scanner.scanner import ClassScanner
 from reports.types import ClassInfo, PboInfo, ReportData
 from reports.json_encoder import CustomJSONEncoder
 from reports.class_list_report import create_class_list_report

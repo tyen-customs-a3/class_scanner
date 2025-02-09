@@ -5,14 +5,9 @@ from typing import Dict, TypedDict
 import sys
 from pathlib import Path
 
-from src.parser.class_parser import ClassParser
-
 # Add parent directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-
-from api import API
-from src.parser.code_parser import CodeParser  # Updated import path
 
 # Core test configuration 
 ROOT_DIR = Path(__file__).parent.parent

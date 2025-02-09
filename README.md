@@ -1,6 +1,21 @@
 # Class Scanner
 
-A Python tool for scanning and analyzing class definitions in Arma PBO files.
+A Python package for scanning game mod classes.
+
+## Installation
+
+To install directly from the repository:
+
+```bash
+pip install git+https://github.com/yourusername/class_scanner.git
+```
+
+## Development Setup
+
+1. Clone the repository
+2. Create a virtual environment: `python -m venv venv`
+3. Activate the virtual environment
+4. Install development dependencies: `pip install -e ".[dev]"`
 
 ## Features
 

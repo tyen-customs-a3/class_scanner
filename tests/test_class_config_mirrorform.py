@@ -1,8 +1,8 @@
 import logging
 import pytest
 from typing import cast
-from src.parser.class_parser import ClassParser, ConfigSections
-from src.constants import (
+from class_scanner.parser.class_parser import ClassParser, ConfigSections
+from class_scanner.constants import (
     ConfigSectionName,
     CFG_PATCHES,
     CFG_WEAPONS,

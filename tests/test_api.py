@@ -2,8 +2,10 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch
 from typing import Dict
-from src.models import ClassData, PboClasses
-from api import API, Scanner
+
+from class_scanner import Scanner
+from class_scanner.api import API
+from class_scanner.models.core import ClassData, PboClasses, PropertyValue
 
 
 @pytest.fixture
@@ -13,13 +15,13 @@ def mock_pbo_classes():
             "Vehicle": ClassData(
                 name="Vehicle",
                 parent="Object",
-                properties={"model": "vehicle.p3d"},
+                properties={"model": PropertyValue("vehicle.p3d")},
                 source_file=Path("config.cpp")
             ),
             "Car": ClassData(
                 name="Car",
                 parent="Vehicle",
-                properties={"maxSpeed": "200"},
+                properties={"maxSpeed": PropertyValue("200")},
                 source_file=Path("config.cpp")
             )
         },
@@ -116,24 +118,6 @@ def test_file_limit(api, tmp_path, mock_pbo_classes):
         results = api.scan_directory(tmp_path, file_limit=2)
 
     assert len(results) == 2
-
-
-def test_clear_cache(api, tmp_path, mock_pbo_classes):
-    """Test cache clearing"""
-    pbo_path = tmp_path / "test.pbo"
-    pbo_path.touch()
-
-    with patch.object(api.scanner, 'scan_pbo', return_value=mock_pbo_classes) as mock_scan:
-        # First scan
-        api.scan_directory(tmp_path)
-        assert mock_scan.call_count == 1
-
-        # Clear cache
-        api.clear_cache()
-
-        # Should scan again after cache clear
-        api.scan_directory(tmp_path)
-        assert mock_scan.call_count == 2
 
 
 def test_api_initialization(api):

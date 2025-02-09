@@ -6,7 +6,7 @@ from typing import Dict, Any
 # Add parent directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.scanner import ClassScanner
+from class_scanner.scanner import ClassScanner
 
 @pytest.fixture
 def test_data_path() -> Path:

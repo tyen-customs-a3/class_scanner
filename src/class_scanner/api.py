@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, Callable, Optional
 import logging
 
-from src.models import ClassData, PboClasses, PropertyValue
+from class_scanner.models import ClassData, PboClasses, PropertyValue
 
 logger = logging.getLogger(__name__)
 

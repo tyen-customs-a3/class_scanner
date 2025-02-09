@@ -1,5 +1,5 @@
 import logging
-from src.parser.property_parser import PropertyParser
+from class_scanner.parser.property_parser import PropertyParser
 
 logger = logging.getLogger(__name__)
 

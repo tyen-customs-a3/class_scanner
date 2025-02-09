@@ -2,11 +2,11 @@ import logging
 import re
 from typing import Dict, List, Optional, Tuple
 
-from src.models.core import PropertyValueType
+from class_scanner.models.core import PropertyValueType
 
 from ..models import PropertyValue
-from src.parser.property_tokenizer import PropertyToken, PropertyTokenType, PropertyTokenizer
-from src.parser.property_types import PropertyTypeDetector
+from class_scanner.parser.property_tokenizer import PropertyToken, PropertyTokenType, PropertyTokenizer
+from class_scanner.parser.property_types import PropertyTypeDetector
 
 logger = logging.getLogger(__name__)
 

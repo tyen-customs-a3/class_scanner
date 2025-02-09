@@ -1,6 +1,6 @@
 import logging
 import pytest
-from src.parser.class_parser import ClassParser
+from class_scanner.parser.class_parser import ClassParser
 from .conftest import TEST_DATA
 
 logger = logging.getLogger(__name__)

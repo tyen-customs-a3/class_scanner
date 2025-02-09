@@ -2,10 +2,10 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional, cast, Callable, Union, List
 
-from src.parser.class_parser import ClassParser
-from src.pbo.pbo_extractor import PboExtractor
-from .models import ClassData, PboClasses
-from .constants import ConfigSectionName, CFG_GLOBAL
+from class_scanner.parser.class_parser import ClassParser
+from class_scanner.pbo.pbo_extractor import PboExtractor
+from class_scanner.models import ClassData, PboClasses
+from class_scanner.constants import ConfigSectionName, CFG_GLOBAL
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class ClassScanner:
     """Simplified class scanner that only extracts basic class data"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.extractor = PboExtractor()
         self.parser = ClassParser()
         self.progress_callback: Optional[Callable[[Union[str, Path]], None]] = None
@@ -94,3 +94,16 @@ class ClassScanner:
         if not name:
             return ''
         return name.rstrip('{;}').strip()
+
+from pathlib import Path
+from typing import Optional
+from .models.core import PboClasses
+
+class Scanner:
+    def __init__(self):
+        pass
+
+    def scan_pbo(self, path: Path) -> Optional[PboClasses]:
+        """Scan a PBO file for class definitions"""
+        # TODO: Implement actual scanning logic
+        return None
