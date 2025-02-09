@@ -1,26 +1,21 @@
 import logging
-from dataclasses import dataclass, field
 import re
 from typing import Dict, List, Optional, Tuple
-from .property_tokenizer import PropertyToken, PropertyTokenType, PropertyTokenizer
-from .property_types import PropertyTypeDetector, PropertyValue, PropertyValueType
+
+from ..models import PropertyValue
+from src.parser.property_tokenizer import PropertyToken, PropertyTokenType, PropertyTokenizer
+from src.parser.property_types import PropertyTypeDetector
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class PropertyData:
-    value: str
-    is_array: bool = False
-    array_values: List[str] = field(default_factory=list)
 
 
 class PropertyParser:
     def __init__(self):
         self.tokenizer = PropertyTokenizer()
         self.type_detector = PropertyTypeDetector()
+        self.property_pattern = re.compile(r'(\w+)(?:\[\])?\s*=\s*("[^"]*"|[^;{\s]+)')
 
-    def parse_block_properties(self, block: str) -> Dict[str, PropertyData]:
+    def parse_block_properties(self, block: str) -> Dict[str, PropertyValue]:
         """Parse properties from a class block, handling nested classes and inheritance"""
         logger.debug("Starting to parse block:\n%s", block)
 
@@ -30,46 +25,29 @@ class PropertyParser:
         block = self._preprocess_block(block)
         logger.debug("Processing inner block:\n%s", block)
 
-        properties: Dict[str, PropertyData] = {}
-        buffer = ''
-        in_nested_class = False
-        current_class = None
-        current_class_depth = 0
-
-        for pos, char in enumerate(block):
-            if char == '{':
-                if 'class' in buffer:
-                    class_match = re.match(r'.*class\s+(\w+)(?:\s*:\s*(\w+))?', buffer)
-                    if class_match:
-                        current_class = class_match.group(1)
-                        in_nested_class = True
-                        current_class_depth += 1
-                    buffer = ''
-                else:
-                    buffer += char
-            elif char == '}':
-                if in_nested_class:
-                    current_class_depth -= 1
-                    if current_class_depth == 0:
-                        in_nested_class = False
-                        current_class = None
-                else:
-                    buffer += char
-            elif char == ';':
-                if not in_nested_class or current_class == 'ChildClass':
-                    buffer += char
-                    line = buffer.strip()
-                    if line and '=' in line:
-                        if prop := self._parse_property(line):
-                            name, value, is_array, array_values = prop
-                            properties[name] = PropertyData(
-                                value=value,
-                                is_array=is_array,
-                                array_values=array_values
-                            )
-                buffer = ''
+        properties: Dict[str, PropertyValue] = {}
+        
+        cleaned_block = re.sub(r'class\s+\w+[^;]*{[^}]*}', '', block)
+        
+        matches = self.property_pattern.finditer(cleaned_block)
+        for match in matches:
+            name = match.group(1)
+            raw_value = match.group(2)
+            
+            if raw_value.startswith('"') and raw_value.endswith('"'):
+                value = raw_value[1:-1]
             else:
-                buffer += char
+                value = raw_value
+                
+            is_array = '[]' in match.group(0)
+            array_values = []
+            
+            properties[name] = PropertyValue(
+                name=name,
+                raw_value=value,
+                is_array=is_array,
+                array_values=array_values
+            )
 
         logger.debug("Final properties: %s", properties)
         return properties

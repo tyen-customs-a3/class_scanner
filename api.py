@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, Callable, Optional
 import logging
 
-from src.models import ClassData, PboClasses
+from src.models import ClassData, PboClasses, PropertyValue
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,12 @@ class Scanner:
                 mock_class = ClassData(
                     name="TestClass",
                     parent="Object",
-                    properties={"testProperty": "value"},
+                    properties={
+                        "testProperty": PropertyValue(
+                            name="testProperty",
+                            raw_value="value"
+                        )
+                    },
                     source_file=Path("config.cpp")
                 )
                 return PboClasses(

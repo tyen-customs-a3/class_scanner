@@ -1,22 +1,8 @@
-from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import auto
 import re
 from typing import List, Optional, Tuple
+from ..models.core import PropertyValue, PropertyValueType
 from .property_tokenizer import PropertyToken, PropertyTokenType
-
-class PropertyValueType(Enum):
-    ARRAY = auto()
-    STRING = auto()
-    NUMBER = auto()
-    BOOLEAN = auto()
-    IDENTIFIER = auto()
-
-@dataclass
-class PropertyValue:
-    name: str = ''
-    raw_value: str = ''
-    value_type: Optional[PropertyValueType] = None
-    array_values: List[str] = field(default_factory=list)
 
 class PropertyTypeDetector:
     EMPTY_ARRAY_PATTERN = re.compile(r'^\s*{\s*}\s*$')
@@ -135,25 +121,39 @@ class PropertyTypeDetector:
         value = value.strip()
 
         if cls.EMPTY_ARRAY_PATTERN.match(value):
-            return PropertyValue(value, PropertyValueType.ARRAY, [])
+            return PropertyValue(
+                raw_value=value,
+                value_type=PropertyValueType.ARRAY,
+                is_array=True,
+                array_values=[]
+            )
 
         if array_match := cls.ARRAY_PATTERN.match(value):
             array_content = array_match.group(1).strip()
             if not array_content:
-                return PropertyValue(value, PropertyValueType.ARRAY, [])
+                return PropertyValue(
+                    raw_value=value,
+                    value_type=PropertyValueType.ARRAY,
+                    is_array=True,
+                    array_values=[]
+                )
             array_values = cls._parse_array_values(array_content)
-            return PropertyValue(value, PropertyValueType.ARRAY, array_values)
+            return PropertyValue(
+                raw_value=value,
+                value_type=PropertyValueType.ARRAY,
+                is_array=True,
+                array_values=array_values
+            )
 
+        # Handle other value types
         if cls.STRING_PATTERN.match(value):
-            return PropertyValue(value, PropertyValueType.STRING)
+            return PropertyValue(raw_value=value, value_type=PropertyValueType.STRING)
+        elif cls.NUMBER_PATTERN.match(value):
+            return PropertyValue(raw_value=value, value_type=PropertyValueType.NUMBER)
+        elif cls.BOOLEAN_PATTERN.match(value):
+            return PropertyValue(raw_value=value, value_type=PropertyValueType.BOOLEAN)
 
-        if cls.NUMBER_PATTERN.match(value):
-            return PropertyValue(value, PropertyValueType.NUMBER)
-
-        if cls.BOOLEAN_PATTERN.match(value):
-            return PropertyValue(value, PropertyValueType.BOOLEAN)
-
-        return PropertyValue(value, PropertyValueType.IDENTIFIER)
+        return PropertyValue(raw_value=value, value_type=PropertyValueType.IDENTIFIER)
 
     @classmethod
     def _parse_array_values(cls, content: str) -> List[str]:

@@ -1,22 +1,23 @@
-from .config import ClassInfo, PropertyValue
 from .core import (
     CacheConfig,
     ScannerConfig,
-    StorageConfig,
-    PboInfo,
+    PropertyValue,
+    PropertyValueType,
     ClassData,
-    PboClasses,
-    PropertyData
+    ClassDict,
+    ConfigSections,
+    PboInfo,
+    PboClasses
 )
 
 __all__ = [
-    'ClassInfo',
-    'PropertyValue',
     'CacheConfig',
     'ScannerConfig',
-    'StorageConfig',
-    'PboInfo',
+    'PropertyValue',
+    'PropertyValueType',
     'ClassData',
-    'PboClasses',
-    'PropertyData'
+    'ClassDict',
+    'ConfigSections',
+    'PboInfo',
+    'PboClasses'
 ]
