@@ -9,6 +9,13 @@ description = "Class scanner for game mods"
 authors = [{name = "Your Name"}]
 readme = "README.md"
 requires-python = ">=3.8"
+dependencies = [
+    "colorama==0.4.6",
+    "iniconfig==2.0.0",
+    "packaging==24.2", 
+    "pluggy==1.5.0",
+    "pytest==8.3.4"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/class_scanner"]

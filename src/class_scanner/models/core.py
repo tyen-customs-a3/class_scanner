@@ -65,7 +65,7 @@ class ClassData:
     """Core class definition data structure"""
     name: str
     parent: str
-    properties: Dict[str, PropertyValue]  # Must be PropertyValue, not Any
+    properties: Dict[str, Any]  # Changed to Any
     source_file: Path
     container: str = ""
     config_type: str = ""

@@ -2,11 +2,12 @@ from pathlib import Path
 from typing import Dict, Callable, Optional
 import logging
 
-from class_scanner.models import ClassData, PboClasses, PropertyValue
+from class_scanner.models import ClassData, PboClasses
+from class_scanner.models.core import PropertyValue
 
 logger = logging.getLogger(__name__)
 
-class Scanner:
+class ClassScanner:
 
     def scan_pbo(self, path: Path) -> Optional[PboClasses]:
         """Scan a PBO file and validate its structure"""
@@ -40,7 +41,7 @@ class Scanner:
 
 class API:
     def __init__(self):
-        self.scanner = Scanner()
+        self.scanner = ClassScanner()
         self._cache: Dict[str, PboClasses] = {}
         self._progress_callback = None
 
@@ -50,7 +51,26 @@ class API:
     def clear_cache(self):
         self._cache.clear()
 
+    def scan_pbo(self, pbo_path: Path) -> Optional[PboClasses]:
+        """Scan a single PBO file."""
+        str_path = str(pbo_path)
+        
+        # Check cache first
+        if str_path in self._cache:
+            return self._cache[str_path]
+
+        # Report progress if callback set
+        if self._progress_callback:
+            self._progress_callback(str_path)
+
+        # Perform scan
+        result = self.scanner.scan_pbo(pbo_path)
+        if result:
+            self._cache[str_path] = result
+        return result
+
     def scan_directory(self, directory: Path, file_limit: Optional[int] = None) -> Dict[str, PboClasses]:
+        """Scan a directory of PBOs."""
         if not directory.exists() or not directory.is_dir():
             return {}
 
@@ -61,19 +81,9 @@ class API:
                 pbo_files = list(pbo_files)[:file_limit]
 
             for pbo_path in pbo_files:
-                str_path = str(pbo_path)
-
-                if str_path in self._cache:
-                    results[str_path] = self._cache[str_path]
-                    continue
-
-                if self._progress_callback:
-                    self._progress_callback(str_path)
-
-                scan_result = self.scanner.scan_pbo(pbo_path)
-                if scan_result:  # Changed condition to accept any valid scan result
-                    self._cache[str_path] = scan_result
-                    results[str_path] = scan_result
+                result = self.scan_pbo(pbo_path)
+                if result:
+                    results[str(pbo_path)] = result
 
         except Exception as e:
             logger.error(f"Error scanning directory {directory}: {e}")

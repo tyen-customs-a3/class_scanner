@@ -49,3 +49,4 @@ config_analysis.txt
 temp/
 .mypy_cache/
 /reports/
+poetry.lock

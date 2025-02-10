@@ -4,12 +4,11 @@ Class scanner package for game mods
 
 __version__ = "0.1.0"
 
-from .models.core import ClassData, PboClasses
-from .scanner import Scanner, ClassScanner
+from class_scanner.api import ClassData, PboClasses, ClassScanner, API
 
 __all__ = [
     'ClassData',
     'PboClasses',
-    'Scanner',
+    'API',
     'ClassScanner',
 ]

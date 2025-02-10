@@ -1,8 +1,9 @@
 from enum import auto
 import re
 from typing import List, Optional, Tuple
-from ..models.core import PropertyValue, PropertyValueType
-from .property_tokenizer import PropertyToken, PropertyTokenType
+
+from class_scanner.models.core import PropertyValue, PropertyValueType
+from class_scanner.parser.property_tokenizer import PropertyToken, PropertyTokenType
 
 class PropertyTypeDetector:
     EMPTY_ARRAY_PATTERN = re.compile(r'^\s*{\s*}\s*$')

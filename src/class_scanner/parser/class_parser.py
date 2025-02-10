@@ -2,8 +2,9 @@ import re
 from typing import Dict, Optional, Any, cast, Union, List, Tuple, Literal
 from pathlib import Path
 import logging
-from .property_parser import PropertyParser
-from ..models import ClassDict, ConfigSections, PropertyValue
+
+from class_scanner.models.core import ClassDict, ConfigSections
+from class_scanner.parser.property_parser import PropertyParser
 from ..constants import ConfigSectionName, CFG_PATCHES, CFG_WEAPONS, CFG_VEHICLES, CFG_GLOBAL
 
 logger = logging.getLogger(__name__)
