@@ -3,9 +3,9 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 from typing import Dict
 
-from class_scanner import Scanner
-from class_scanner.api import API
+from class_scanner.api import API, ClassScanner
 from class_scanner.models.core import ClassData, PboClasses, PropertyValue
+from class_scanner.scanner import Scanner
 
 
 @pytest.fixture
@@ -122,7 +122,7 @@ def test_file_limit(api, tmp_path, mock_pbo_classes):
 
 def test_api_initialization(api):
     """Test API class initialization"""
-    assert isinstance(api.scanner, Scanner)
+    assert isinstance(api.scanner, ClassScanner)
     assert isinstance(api._cache, dict)
     assert api._progress_callback is None
 

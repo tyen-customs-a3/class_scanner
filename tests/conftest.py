@@ -5,6 +5,9 @@ from typing import Dict, TypedDict
 import sys
 from pathlib import Path
 
+from class_scanner.api import API
+from class_scanner.parser.class_parser import ClassParser
+
 # Add parent directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
