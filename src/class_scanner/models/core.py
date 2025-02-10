@@ -81,14 +81,15 @@ class ClassData:
 
 class ClassDict(TypedDict):
     parent: str
-    properties: Dict[str, PropertyValue]
+    properties: Dict[str, Any]
     container: str
 
-class ConfigSections(TypedDict):
-    CfgPatches: Dict[str, ClassDict]
-    CfgWeapons: Dict[str, ClassDict]
-    CfgVehicles: Dict[str, ClassDict]
-    _global: Dict[str, ClassDict]
+# Type aliases for better compatibility
+SectionDict = Dict[str, ClassDict]
+ConfigSections = Dict[str, SectionDict]
+
+# Make sure the interface matches Dict[str, Dict[str, Dict[str, Any]]]
+ClassSectionsDict = Dict[str, Dict[str, Dict[str, Any]]]
 
 # PBO handling
 @dataclass(frozen=True)

@@ -101,3 +101,5 @@ def test_structure(tmp_path: Path) -> Path:
     mod_dir.mkdir()
     (mod_dir / "addons").mkdir()
     return tmp_path
+
+__all__ = ['sample_configs', 'api', 'parser', 'test_structure', 'TEST_DATA_ROOT']
