@@ -16,7 +16,7 @@ T = TypeVar('T')
 
 class ClassParser:
     """Parser for class definitions in config files"""
-
+    
     def __init__(self) -> None:
         self._prefix_cache: Dict[str, str] = {}
         self.current_file: Optional[Path] = None
@@ -26,15 +26,32 @@ class ClassParser:
         """Helper method to access section dictionaries with type safety"""
         return result[section]
 
+    def _determine_section(self, class_name: str, parent: str, current_section: Optional[ConfigSectionName] = None) -> Optional[ConfigSectionName]:
+        """Determine which section a class belongs to"""
+        # Explicit config sections take precedence
+        if class_name.startswith('Cfg'):
+            if class_name in (CFG_PATCHES, CFG_WEAPONS, CFG_VEHICLES):
+                return cast(ConfigSectionName, class_name)
+        
+        # Use current section if we're inside one
+        if current_section:
+            return current_section
+            
+        # Default to global section for loose classes
+        return CFG_GLOBAL
+
     def parse_class_definitions(self, content: str) -> ClassSectionsDict:
         """Parse class definitions and their properties"""
         logger.debug("Starting class definitions parsing")
+        # Initialize with just global section
         result: ConfigSections = {
-            CFG_PATCHES: {},
-            CFG_WEAPONS: {},
-            CFG_VEHICLES: {},
             CFG_GLOBAL: {}
         }
+
+        # Only add other sections when they're found in the data
+        def ensure_section(section: ConfigSectionName) -> None:
+            if section not in result:
+                result[section] = {}
 
         content = self._clean_code(content)
         current_section: Optional[ConfigSectionName] = None
@@ -55,7 +72,10 @@ class ClassParser:
                 parent = match.group(2) or ''
                 has_block = match.group(3) == '{'
                 
-                logger.debug("Found class: %s, Parent: %s, Has Block: %s", class_name, parent, has_block)
+                # Determine section based on class name and context
+                target_section = self._determine_section(class_name, parent, parent_section or current_section)
+                logger.debug("Found class: %s, Parent: %s, Target Section: %s", 
+                           class_name, parent, target_section)
 
                 if has_block:
                     block_start = pos + match.end() - 1
@@ -64,8 +84,9 @@ class ClassParser:
                     
                     properties = self.property_parser.parse_block_properties(block)
                     
-                    target_section = parent_section if parent_section else current_section
-                    if target_section and target_section in (CFG_PATCHES, CFG_WEAPONS, CFG_VEHICLES, CFG_GLOBAL):
+                    # Add to appropriate section
+                    if target_section:
+                        ensure_section(target_section)
                         section_dict = self._get_section_dict(result, target_section)
                         section_dict[class_name] = ClassDict(
                             parent=parent,
@@ -73,8 +94,9 @@ class ClassParser:
                             container=container
                         )
 
-                    logger.debug("Parsing nested classes for %s as container", class_name)
-                    nested_classes, _ = parse_block(block, 0, class_name, target_section)
+                    # Parse nested classes with inherited section
+                    nested_section = target_section if class_name.startswith('Cfg') else None
+                    nested_classes, _ = parse_block(block, 0, class_name, nested_section)
 
                     classes[class_name] = {
                         'parent': parent,
@@ -101,25 +123,11 @@ class ClassParser:
         logger.debug("Found top-level classes: %s", list(all_classes.keys()))
 
         for class_name, class_data in all_classes.items():
-            if class_name in (CFG_PATCHES, CFG_WEAPONS, CFG_VEHICLES):
-                section = cast(ConfigSectionName, class_name)
-                current_section = section
+            section = self._determine_section(class_name, class_data['parent'])
+            if section:
                 section_dict = self._get_section_dict(result, section)
-                
-                def add_nested_classes(nested_data: Dict[str, Dict[str, Any]], container: str) -> None:
-                    for nested_name, nested_info in nested_data.items():
-                        section_dict[nested_name] = ClassDict(
-                            parent=nested_info['parent'],
-                            properties=nested_info.get('properties', {}),
-                            container=container
-                        )
-                        logger.debug("Added nested class %s to section %s with container %s",
-                                   nested_name, section, container)
-                        
-                        if nested_info['nested']:
-                            add_nested_classes(nested_info['nested'], nested_name)
-                
-                add_nested_classes(class_data['nested'], class_name)
+                # Add class and its nested classes to appropriate section
+                self._add_class_tree(section_dict, class_name, class_data)
 
         logger.debug("Finished parsing. Sections summary:")
         for section_name, section_dict in result.items():
@@ -166,3 +174,15 @@ class ClassParser:
             end_pos += 1
 
         return content[start_pos:end_pos], end_pos
+
+    def _add_class_tree(self, section: Dict[str, ClassDict], class_name: str, class_data: Dict[str, Any], prefix: str = '') -> None:
+        """Add a class and all its nested classes to the given section"""
+        section[class_name] = ClassDict(
+            parent=class_data['parent'],
+            properties=class_data['properties'],
+            container=prefix
+        )
+        
+        # Add nested classes with current class as prefix
+        for nested_name, nested_data in class_data.get('nested', {}).items():
+            self._add_class_tree(section, nested_name, nested_data, class_name)

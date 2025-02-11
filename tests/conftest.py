@@ -67,6 +67,26 @@ TEST_DATA: Dict[str, CodeTestData] = {
             'TargetTraining': {'parent': 'NonStrategic'},
             'TargetGrenade': {'parent': 'TargetTraining'}
         }
+    },
+    'hidden_vest': {
+        'path': TEST_DATA_ROOT / '@pca_misc/addons/pca_extra_contents',
+        'source_path': TEST_DATA_ROOT / '@pca_misc/addons/pca_extra_contents/x/pca_misc/addons/pca_extra_contents/CfgWeapons_hiddenVest.hpp',
+        'source': 'pca_misc',
+        'expected_classes': {
+            'pca_vest_invisible': {'parent': 'Vest_Camo_Base', 'section': '_global'},
+            'pca_vest_invisible_kevlar': {'parent': 'pca_vest_invisible', 'section': '_global'},
+            'pca_vest_invisible_plate': {'parent': 'pca_vest_invisible', 'section': '_global'},
+        }
+    },
+    'facewear': {
+        'path': TEST_DATA_ROOT / '@pca_misc/addons/pca_extra_contents',
+        'source_path': TEST_DATA_ROOT / '@pca_misc/addons/pca_extra_contents/x/pca_misc/addons/pca_extra_contents/CfgWeapons_facewear.hpp', 
+        'source': 'pca_misc',
+        'expected_classes': {
+            'pca_nvg_dummy_base': {'parent': 'NVGoggles', 'section': 'CfgWeapons'},
+            'pca_nvg_balaclava': {'parent': 'pca_nvg_dummy_base', 'section': 'CfgWeapons'},
+            'pca_nvg_face_shield_blk': {'parent': 'pca_nvg_dummy_base', 'section': 'CfgWeapons'},
+        }
     }
 }
 
