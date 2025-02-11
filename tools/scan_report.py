@@ -3,12 +3,9 @@ import json
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from rich.console import Console
-from rich.progress import Progress
-from rich.table import Table
 from threading import Lock
 from typing import Dict, Any, List, Optional
-from class_scanner.scanner import ClassScanner
+from class_scanner.scanner import Scanner
 from reports.types import ClassInfo, PboInfo, ReportData
 from reports.json_encoder import CustomJSONEncoder
 from reports.class_list_report import create_class_list_report
