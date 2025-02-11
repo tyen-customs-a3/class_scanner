@@ -1,28 +1,35 @@
 from pathlib import Path
-from typing import Dict, Callable, Optional, Any, Union
 import logging
+from typing import Callable, Dict, Optional, Union
 from .cache import ClassCache
 from .scanner import Scanner
-from .models import PboScanData
+from .models import PboScanData, ClassData
 
 logger = logging.getLogger(__name__)
 
 class ClassAPI:
     """Main API class for class scanning functionality"""
     
-    def __init__(self, cache_dir: Optional[Path] = None) -> None:
+    def __init__(self, cache_dir: Optional[Path] = None, cache_file: Optional[Path] = None) -> None:
         self.scanner = Scanner()
         self.cache = ClassCache()
         self.cache_dir = cache_dir
+        self.cache_file = cache_file
         self._progress_callback: Optional[Callable[[str], None]] = None
         
-        if cache_dir and cache_dir.exists():
+        # Try loading cache from specific file first, then fall back to directory
+        if cache_file and cache_file.exists():
             try:
-                cache_file = cache_dir / 'pbo_cache.json'
-                if cache_file.exists():
-                    self.cache = ClassCache.load_from_disk(cache_file)
+                self.cache = ClassCache.load_from_disk(cache_file)
             except Exception as e:
-                logger.warning(f"Failed to load cache: {e}")
+                logger.warning(f"Failed to load cache from file {cache_file}: {e}")
+        elif cache_dir and cache_dir.exists():
+            try:
+                default_cache = cache_dir / 'pbo_cache.json'
+                if default_cache.exists():
+                    self.cache = ClassCache.load_from_disk(default_cache)
+            except Exception as e:
+                logger.warning(f"Failed to load cache from directory: {e}")
 
     def set_progress_callback(self, callback: Callable[[str], None]) -> None:
         """Set callback for progress updates"""
@@ -49,12 +56,7 @@ class ClassAPI:
                 results[str(pbo_file)] = result
                 
         # Save cache if directory specified
-        if self.cache_dir:
-            cache_file = self.cache_dir / 'pbo_cache.json'
-            try:
-                self.cache.save_to_disk(cache_file)
-            except Exception as e:
-                logger.error(f"Failed to save cache: {e}")
+        self.save_cache()
 
         return results
 
@@ -75,3 +77,17 @@ class ClassAPI:
             return result
 
         return None
+
+    def save_cache(self) -> None:
+        """Save cache to configured location."""
+        if self.cache_file:
+            try:
+                self.cache.save_to_disk(self.cache_file)
+            except Exception as e:
+                logger.error(f"Failed to save cache to {self.cache_file}: {e}")
+        elif self.cache_dir:
+            try:
+                cache_file = self.cache_dir / 'pbo_cache.json'
+                self.cache.save_to_disk(cache_file)
+            except Exception as e:
+                logger.error(f"Failed to save cache to directory: {e}")

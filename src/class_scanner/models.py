@@ -60,6 +60,28 @@ class PropertyValue:
             return self.raw_value == other
         return super().__eq__(other)
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to serializable dictionary"""
+        return {
+            'name': self.name,
+            'raw_value': self.raw_value,
+            'value_type': self.value_type.name if self.value_type else None,
+            'is_array': self.is_array,
+            'array_values': self.array_values
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'PropertyValue':
+        """Create instance from dictionary"""
+        value_type = PropertyValueType[data['value_type']] if data['value_type'] else None
+        return cls(
+            name=data['name'],
+            raw_value=data['raw_value'],
+            value_type=value_type,
+            is_array=data['is_array'],
+            array_values=data['array_values']
+        )
+
 # Class definitions
 @dataclass
 class ClassData:
@@ -72,6 +94,43 @@ class ClassData:
     config_type: str = ""
     scope: int = 0
     category: Optional[str] = None  # Add back category field
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to serializable dictionary"""
+        return {
+            'name': self.name,
+            'parent': self.parent,
+            'properties': {
+                k: v.to_dict() if isinstance(v, PropertyValue) else v
+                for k, v in self.properties.items()
+            },
+            'source_file': str(self.source_file),
+            'container': self.container,
+            'config_type': self.config_type,
+            'scope': self.scope,
+            'category': self.category
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ClassData':
+        """Create instance from dictionary"""
+        properties = {}
+        for k, v in data['properties'].items():
+            if isinstance(v, dict) and all(key in v for key in ['name', 'raw_value']):
+                properties[k] = PropertyValue.from_dict(v)
+            else:
+                properties[k] = v
+
+        return cls(
+            name=data['name'],
+            parent=data['parent'],
+            properties=properties,
+            source_file=Path(data['source_file']),
+            container=data['container'],
+            config_type=data['config_type'],
+            scope=data['scope'],
+            category=data['category']
+        )
 
     @property
     def display_name(self) -> Optional[str]:
@@ -113,7 +172,10 @@ class PboScanData:
                 name: {
                     'name': c.name,
                     'parent': c.parent,
-                    'properties': c.properties,
+                    'properties': {
+                        k: v.to_dict() if isinstance(v, PropertyValue) else v
+                        for k, v in c.properties.items()
+                    },
                     'source_file': str(c.source_file),
                     'container': c.container,
                     'config_type': c.config_type,
@@ -133,7 +195,10 @@ class PboScanData:
                 name: ClassData(
                     name=c['name'],
                     parent=c['parent'],
-                    properties=c['properties'],
+                    properties={
+                        k: PropertyValue.from_dict(v) if isinstance(v, dict) and 'raw_value' in v else v
+                        for k, v in c['properties'].items()
+                    },
                     source_file=Path(c['source_file']),
                     container=c['container'],
                     config_type=c['config_type'],

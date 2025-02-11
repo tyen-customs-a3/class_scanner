@@ -136,10 +136,8 @@ class PboExtractor:
 
             cmd = ['extractpbo', '-P', '-S', '-Y', '-D']
 
-            extensions = ['.cpp'] + [ext for ext in self.CODE_EXTENSIONS if ext != '.cpp']
-            extensions.append('.bin')
-            extensions.append('.txt')
-            extensions_filter = ','.join(f'*.{ext.lstrip(".")}' for ext in extensions)
+            # Simple filter for cpp and hpp files plus bins that might contain them
+            extensions_filter = '*.cpp,*.hpp,*.bin'
             cmd.extend([f'-F={extensions_filter}'])
 
             cmd.extend([str(pbo_path), str(temp_dir)])

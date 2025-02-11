@@ -21,7 +21,9 @@ class PboProcessor:
         """Extract and yield paths to config files"""
         try:
             with self._temp_extraction(pbo_path) as temp_dir:
-                for file in temp_dir.rglob('*.cpp'):
-                    yield file
+                # Look for both cpp and hpp files
+                for extension in ['.cpp', '.hpp']:
+                    for file in temp_dir.rglob(f'*{extension}'):
+                        yield file
         except Exception as e:
             logging.error(f"Failed to process {pbo_path}: {e}")

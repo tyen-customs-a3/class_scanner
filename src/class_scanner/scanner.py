@@ -38,29 +38,27 @@ class Scanner:
                 logger.debug(f"No code files found in {path}")
                 return None
 
-            config_content = next(
-                (content for name, content in code_files.items() 
-                 if name.lower().endswith('config.cpp')),
-                None
-            )
-            
-            if not config_content:
-                logger.debug(f"No config.cpp found in {path}")
-                return None
-
-            sections = self.parser.parse_class_definitions(config_content)
-            
+            # Process each cpp and hpp file individually
             classes = {}
-            for section_name, section_classes in sections.items():
-                for class_name, class_info in section_classes.items():
-                    classes[class_name] = ClassData(
-                        name=class_name,
-                        parent=class_info.get('parent', ''),
-                        properties=class_info.get('properties', {}),
-                        source_file=path,
-                        container=section_name,
-                        config_type=section_name
-                    )
+            for name, content in code_files.items():
+                if not name.lower().endswith(('.cpp', '.hpp')):
+                    continue
+                
+                sections = self.parser.parse_class_definitions(content)
+                for section_name, section_classes in sections.items():
+                    for class_name, class_info in section_classes.items():
+                        # If class already exists, only overwrite if this is config.cpp
+                        if class_name in classes and not name.lower().endswith('config.cpp'):
+                            continue
+                            
+                        classes[class_name] = ClassData(
+                            name=class_name,
+                            parent=class_info.get('parent', ''),
+                            properties=class_info.get('properties', {}),
+                            source_file=path,
+                            container=section_name,
+                            config_type=section_name
+                        )
 
             # Always return a PboClasses object even if empty
             return PboScanData(
