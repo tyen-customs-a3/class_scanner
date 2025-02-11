@@ -3,7 +3,7 @@ from typing import Dict, Optional, Any, cast, Tuple, TypeVar, Union
 from pathlib import Path
 import logging
 
-from class_scanner.models.core import (
+from class_scanner.models import (
     ClassDict, ConfigSections, SectionDict, 
     ClassSectionsDict
 )

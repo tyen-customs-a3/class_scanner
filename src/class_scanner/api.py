@@ -3,10 +3,12 @@ from typing import Dict, Callable, Optional, Any
 import logging
 import struct
 import io
-
-from class_scanner.models import ClassData, PboClasses
-from class_scanner.models.core import PropertyValue
+import logging
+from pathlib import Path
+from typing import Dict, Optional, Callable, Union
+from class_scanner.models import ClassData, PboClasses, PropertyValue
 from class_scanner.parser.class_parser import ClassParser
+from class_scanner.scanner import Scanner
 
 logger = logging.getLogger(__name__)
 
@@ -121,16 +123,7 @@ class ClassScanner:
             logger.debug("Error extracting config.cpp: %s", e)
             return None
 
-import logging
-from pathlib import Path
-from typing import Dict, Optional, Callable, Union
-
-from class_scanner.models.core import PboClasses
-from class_scanner.scanner import Scanner
-
-logger = logging.getLogger(__name__)
-
-class API:
+class ClassAPI:
     """Main API class for class scanning functionality"""
     
     def __init__(self) -> None:

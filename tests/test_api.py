@@ -4,8 +4,8 @@ from unittest.mock import Mock, patch
 from typing import Dict
 import struct
 
-from class_scanner.api import API
-from class_scanner.models.core import ClassData, PboClasses, PropertyValue
+from class_scanner.api import ClassAPI
+from class_scanner.models import ClassData, PboClasses, PropertyValue
 from class_scanner.scanner import Scanner
 from tests.conftest import TEST_DATA_ROOT
 
@@ -28,7 +28,7 @@ def mock_pbo_classes(sample_configs):
 @pytest.fixture
 def api():
     """Create API instance for testing"""
-    return API()
+    return ClassAPI()
 
 @pytest.fixture
 def test_dir(tmp_path, sample_configs):

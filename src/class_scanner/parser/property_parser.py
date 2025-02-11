@@ -2,7 +2,7 @@ import logging
 import re
 from typing import Dict, List, Optional, Tuple
 
-from class_scanner.models.core import PropertyValue, PropertyValueType
+from class_scanner.models import PropertyValue, PropertyValueType
 
 from class_scanner.parser.property_tokenizer import PropertyToken, PropertyTokenType, PropertyTokenizer
 from class_scanner.parser.property_types import PropertyTypeDetector

@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from class_scanner.models import ClassData
-from class_scanner.models.core import PropertyValue
+from class_scanner.models import PropertyValue
 from class_scanner.parser.class_parser import ClassParser
 from .conftest import TEST_DATA
 

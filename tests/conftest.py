@@ -5,7 +5,7 @@ from typing import Dict, TypedDict
 import sys
 from pathlib import Path
 
-from class_scanner.api import API
+from class_scanner.api import ClassAPI
 from class_scanner.parser.class_parser import ClassParser
 
 # Add parent directory to Python path
@@ -87,7 +87,7 @@ def sample_configs() -> Dict[str, CodeTestData]:
 @pytest.fixture
 def api():
     """Provide API instance"""
-    return API()
+    return ClassAPI()
 
 @pytest.fixture
 def parser():

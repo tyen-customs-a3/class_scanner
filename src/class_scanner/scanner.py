@@ -2,11 +2,10 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional, cast, Callable, Union, List
 
+from class_scanner.constants import ConfigSectionName, CFG_GLOBAL
+from class_scanner.models import ClassData, PboClasses
 from class_scanner.parser.class_parser import ClassParser
 from class_scanner.pbo.pbo_extractor import PboExtractor
-from class_scanner.models import ClassData, PboClasses
-from class_scanner.constants import ConfigSectionName, CFG_GLOBAL
-
 logger = logging.getLogger(__name__)
 
 
@@ -94,16 +93,6 @@ class ClassScanner:
         if not name:
             return ''
         return name.rstrip('{;}').strip()
-
-import logging
-from pathlib import Path
-from typing import Optional
-
-from class_scanner.models.core import PboClasses, ClassData
-from class_scanner.parser.class_parser import ClassParser
-from class_scanner.pbo.pbo_extractor import PboExtractor
-
-logger = logging.getLogger(__name__)
 
 class Scanner:
     """Scanner class for PBO scanning operations"""
