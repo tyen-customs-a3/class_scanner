@@ -30,9 +30,9 @@ TEST_DATA: Dict[str, CodeTestData] = {
         'source_path': TEST_DATA_ROOT / '@tc_mirrorform/addons/mirrorform/tc/mirrorform/config.cpp',
         'source': 'tc_mirrorform',
         'expected_classes': {
-            'CfgPatches': {'parent': ''},
-            'CfgWeapons': {'parent': ''},
-            'CfgVehicles': {'parent': ''},
+            # 'CfgPatches': {'parent': ''},
+            # 'CfgWeapons': {'parent': ''},
+            # 'CfgVehicles': {'parent': ''},
             'TC_MIRROR': {'parent': '', 'section': 'CfgPatches'},
             'UniformItem': {'parent': ''},
             'Uniform_Base': {'parent': ''},

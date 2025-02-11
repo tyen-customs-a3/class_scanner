@@ -6,7 +6,7 @@ from typing import Dict, Any
 # Add parent directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from class_scanner.scanner import ClassScanner
+from class_scanner.scanner import Scanner
 
 @pytest.fixture
 def test_data_path() -> Path:
@@ -14,11 +14,11 @@ def test_data_path() -> Path:
     return Path(__file__).parent / 'data'
 
 @pytest.fixture
-def scanner() -> ClassScanner:
+def scanner() -> Scanner:
     """Create scanner instance"""
-    return ClassScanner()
+    return Scanner()
 
-def test_scan_sample_directory(scanner: ClassScanner, test_data_path: Path):
+def test_scan_sample_directory(scanner: Scanner, test_data_path: Path):
     """Test scanning sample data directory structure"""
     assert test_data_path.exists(), "Test data directory not found"
     
@@ -31,7 +31,7 @@ def test_scan_sample_directory(scanner: ClassScanner, test_data_path: Path):
     assert any('mirrorform.pbo' in path for path in pbo_paths)
     assert any('babe_em.pbo' in path for path in pbo_paths)
 
-def test_pbo_content_extraction(scanner: ClassScanner, sample_configs):
+def test_pbo_content_extraction(scanner: Scanner, sample_configs):
     """Test extraction of PBO contents"""
     for config_name, config_data in sample_configs.items():
         pbo_path = config_data['path']
@@ -48,7 +48,7 @@ def test_pbo_content_extraction(scanner: ClassScanner, sample_configs):
                 assert result.classes[class_name].parent == class_info['parent'], \
                     f"Wrong parent for {class_name} in {config_name}"
 
-def test_scan_multiple_pbos(scanner: ClassScanner, sample_configs):
+def test_scan_multiple_pbos(scanner: Scanner, sample_configs):
     """Test scanning multiple PBO files"""
     for config_name, config_data in sample_configs.items():
         pbo_path = config_data['path']
@@ -64,20 +64,20 @@ def test_scan_multiple_pbos(scanner: ClassScanner, sample_configs):
             if class_info['parent']:
                 assert result.classes[class_name].parent == class_info['parent']
 
-def test_scan_invalid_directory(scanner: ClassScanner, tmp_path: Path):
+def test_scan_invalid_directory(scanner: Scanner, tmp_path: Path):
     """Test scanner behavior with invalid directory"""
     invalid_dir = tmp_path / "nonexistent"
     results = scanner.scan_directory(invalid_dir)
     assert not results, "Expected empty results for invalid directory"
 
-def test_scan_empty_directory(scanner: ClassScanner, tmp_path: Path):
+def test_scan_empty_directory(scanner: Scanner, tmp_path: Path):
     """Test scanner behavior with empty directory"""
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
     results = scanner.scan_directory(empty_dir)
     assert not results, "Expected empty results for directory without PBOs"
 
-def test_malformed_class_definition(scanner: ClassScanner, tmp_path: Path):
+def test_malformed_class_definition(scanner: Scanner, tmp_path: Path):
     """Test handling of malformed class definitions"""
     pbo_dir = tmp_path / "test_malformed"
     pbo_dir.mkdir()
@@ -96,7 +96,7 @@ def test_malformed_class_definition(scanner: ClassScanner, tmp_path: Path):
     assert not result or all('Bad' not in str(classes) 
                            for classes in result.values())
 
-def test_empty_and_whitespace_files(scanner: ClassScanner, tmp_path: Path):
+def test_empty_and_whitespace_files(scanner: Scanner, tmp_path: Path):
     """Test handling of empty and whitespace-only files"""
     pbo_dir = tmp_path / "test_empty"
     pbo_dir.mkdir()
@@ -110,7 +110,7 @@ def test_empty_and_whitespace_files(scanner: ClassScanner, tmp_path: Path):
     result = scanner.scan_directory(pbo_dir)
     assert not result, "Expected no results from empty files"
 
-def test_large_file_handling(scanner: ClassScanner, tmp_path: Path):
+def test_large_file_handling(scanner: Scanner, tmp_path: Path):
     """Test handling of large files"""
     pbo_dir = tmp_path / "test_large"
     pbo_dir.mkdir()
@@ -122,7 +122,7 @@ def test_large_file_handling(scanner: ClassScanner, tmp_path: Path):
     result = scanner.scan_directory(pbo_dir)
     assert result is not None, "Scanner should handle large files"
 
-def test_special_characters_in_names(scanner: ClassScanner, tmp_path: Path):
+def test_special_characters_in_names(scanner: Scanner, tmp_path: Path):
     """Test handling of special characters in class names"""
     pbo_dir = tmp_path / "test_special"
     pbo_dir.mkdir()
@@ -140,7 +140,7 @@ def test_special_characters_in_names(scanner: ClassScanner, tmp_path: Path):
     result = scanner.scan_directory(pbo_dir)
     assert result is not None, "Scanner should handle special characters"
 
-def test_circular_inheritance(scanner: ClassScanner, tmp_path: Path):
+def test_circular_inheritance(scanner: Scanner, tmp_path: Path):
     """Test handling of circular class inheritance"""
     pbo_dir = tmp_path / "test_circular"
     pbo_dir.mkdir()
@@ -155,7 +155,7 @@ def test_circular_inheritance(scanner: ClassScanner, tmp_path: Path):
     result = scanner.scan_directory(pbo_dir)
     assert result is not None, "Scanner should handle circular inheritance"
 
-def test_deeply_nested_classes(scanner: ClassScanner, tmp_path: Path):
+def test_deeply_nested_classes(scanner: Scanner, tmp_path: Path):
     """Test handling of deeply nested class definitions"""
     pbo_dir = tmp_path / "test_nested"
     pbo_dir.mkdir()
@@ -167,7 +167,7 @@ def test_deeply_nested_classes(scanner: ClassScanner, tmp_path: Path):
     result = scanner.scan_directory(pbo_dir)
     assert result is not None, "Scanner should handle deeply nested classes"
 
-def test_mixed_line_endings(scanner: ClassScanner, tmp_path: Path):
+def test_mixed_line_endings(scanner: Scanner, tmp_path: Path):
     """Test handling of mixed line endings"""
     pbo_dir = tmp_path / "test_endings"
     pbo_dir.mkdir()
@@ -181,7 +181,7 @@ def test_mixed_line_endings(scanner: ClassScanner, tmp_path: Path):
         first_result = next(iter(result.values()))
         assert len(first_result.classes) == 3, "Should find all classes regardless of line endings"
 
-def test_unicode_characters(scanner: ClassScanner, tmp_path: Path):
+def test_unicode_characters(scanner: Scanner, tmp_path: Path):
     """Test handling of Unicode characters in class definitions"""
     pbo_dir = tmp_path / "test_unicode"
     pbo_dir.mkdir()
