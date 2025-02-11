@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Optional, Any, List, TypedDict
 from enum import Enum, auto
+from datetime import datetime
 
 # Basic configs
 @dataclass(frozen=True)
@@ -100,6 +101,46 @@ class PboInfo:
     timestamp: float
 
 @dataclass
-class PboClasses:
+class PboScanData:
     classes: Dict[str, ClassData]
     source: str
+    last_accessed: datetime = field(default_factory=datetime.now)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to serializable dictionary"""
+        return {
+            'classes': {
+                name: {
+                    'name': c.name,
+                    'parent': c.parent,
+                    'properties': c.properties,
+                    'source_file': str(c.source_file),
+                    'container': c.container,
+                    'config_type': c.config_type,
+                    'scope': c.scope,
+                    'category': c.category
+                } for name, c in self.classes.items()
+            },
+            'source': self.source,
+            'last_accessed': self.last_accessed.isoformat()
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'PboScanData':
+        """Create from serialized dictionary"""
+        return cls(
+            classes={
+                name: ClassData(
+                    name=c['name'],
+                    parent=c['parent'],
+                    properties=c['properties'],
+                    source_file=Path(c['source_file']),
+                    container=c['container'],
+                    config_type=c['config_type'],
+                    scope=c['scope'],
+                    category=c['category']
+                ) for name, c in data['classes'].items()
+            },
+            source=data['source'],
+            last_accessed=datetime.fromisoformat(data['last_accessed'])
+        )

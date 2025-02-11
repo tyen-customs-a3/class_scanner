@@ -5,7 +5,8 @@ from typing import Dict
 import struct
 
 from class_scanner.api import ClassAPI
-from class_scanner.models import ClassData, PboClasses, PropertyValue
+from class_scanner.cache import ClassCache
+from class_scanner.models import ClassData, PboScanData, PropertyValue
 from class_scanner.scanner import Scanner
 from tests.conftest import TEST_DATA_ROOT
 
@@ -23,7 +24,7 @@ def mock_pbo_classes(sample_configs):
         )
         for name, data in mirror_data['expected_classes'].items()
     }
-    return PboClasses(classes=classes, source=mirror_data['source'])
+    return PboScanData(classes=classes, source=mirror_data['source'])
 
 @pytest.fixture
 def api():
@@ -101,7 +102,7 @@ def test_file_limit(api, tmp_path, mock_pbo_classes):
 def test_api_initialization(api):
     """Test API class initialization"""
     assert isinstance(api.scanner, Scanner)
-    assert isinstance(api._cache, dict)
+    assert isinstance(api.cache, ClassCache)
     assert api._progress_callback is None
 
 def test_set_progress_callback(api):
@@ -110,16 +111,6 @@ def test_set_progress_callback(api):
     
     api.set_progress_callback(callback)
     assert api._progress_callback == callback
-
-def test_clear_cache(api, test_dir):
-    """Test cache clearing functionality"""
-    # Populate cache
-    api.scan_directory(test_dir)
-    assert len(api._cache) > 0
-    
-    # Clear cache
-    api.clear_cache()
-    assert len(api._cache) == 0
 
 def test_scan_directory_basic(api, test_dir, sample_configs):
     """Test basic directory scanning"""
@@ -133,18 +124,6 @@ def test_scan_directory_with_limit(api, test_dir):
     """Test directory scanning with file limit"""
     results = api.scan_directory(test_dir, file_limit=1)
     assert len(results) <= 1
-
-def test_scan_directory_caching(api, test_dir):
-    """Test that scanning caches results"""
-    # First scan
-    first_results = api.scan_directory(test_dir)
-    cache_size = len(api._cache)
-    
-    # Second scan
-    second_results = api.scan_directory(test_dir)
-    
-    assert len(api._cache) == cache_size
-    assert first_results == second_results
 
 def test_progress_callback_execution(api, test_dir):
     """Test progress callback is called correctly"""
@@ -170,36 +149,6 @@ def test_scan_empty_directory(api, tmp_path):
     results = api.scan_directory(empty_dir)
     assert len(results) == 0
 
-def test_cache_persistence(api, test_dir, sample_configs):
-    """Test that cache persists between scans"""
-    # First scan to populate cache
-    api.scan_directory(test_dir)
-    initial_cache = api._cache.copy()
-    
-    # Use a known PBO path from test data
-    pbo_path = sample_configs['mirror']['path']
-    
-    # Modify a file timestamp but keep cache
-    pbo_path.touch()
-    
-    # Second scan should use cached results
-    results = api.scan_directory(test_dir)
-    assert api._cache == initial_cache
-    assert all(str(test_dir) in path for path in results.keys())
-
-def test_partial_directory_scan(api, test_dir):
-    """Test scanning directory with some files already cached"""
-    # First scan only some files
-    first_results = api.scan_directory(test_dir, file_limit=2)
-    cached_files = set(api._cache.keys())
-    
-    # Second scan all files
-    all_results = api.scan_directory(test_dir)
-    
-    # Verify cached results were reused
-    assert all(path in all_results for path in cached_files)
-    assert len(all_results) > len(first_results)
-
 def test_scanner_none_result_handling(api, test_dir):
     """Test handling of None results from scanner"""
     class NoneScanner(Scanner):
@@ -219,7 +168,7 @@ def test_scan_single_pbo(api, test_dir, sample_configs):
     result = api.scan_pbo(pbo_path)
     
     assert result is not None
-    assert isinstance(result, PboClasses)
+    assert isinstance(result, PboScanData)
     assert len(result.classes) > 0
 
 def test_scan_nonexistent_pbo(api, tmp_path):
@@ -237,15 +186,22 @@ def test_scan_invalid_file(api, tmp_path):
     result = api.scan_pbo(invalid)
     assert result is None
 
-def test_scan_pbo_caching(api, test_dir, sample_configs):
-    """Test that scanning a single PBO uses cache"""
-    # Use a known PBO path from test data
-    pbo_path = sample_configs['mirror']['path']
+def test_api_cache_persistence(api, test_dir, tmp_path):
+    """Test API cache persistence between instances"""
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
     
-    # First scan should populate cache
-    first_result = api.scan_pbo(pbo_path)
-    assert str(pbo_path) in api._cache
+    # First API instance
+    api1 = ClassAPI(cache_dir=cache_dir)
+    results1 = api1.scan_directory(test_dir)
+    assert len(results1) > 0
     
-    # Second scan should use cache
-    second_result = api.scan_pbo(pbo_path)
-    assert first_result == second_result
+    # Second API instance should load from cache
+    api2 = ClassAPI(cache_dir=cache_dir)
+    results2 = api2.scan_directory(test_dir)
+    
+    # Results should match
+    assert results1.keys() == results2.keys()
+    for key in results1:
+        assert results1[key].source == results2[key].source
+        assert results1[key].classes.keys() == results2[key].classes.keys()
