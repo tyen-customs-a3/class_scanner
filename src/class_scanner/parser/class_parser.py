@@ -23,7 +23,8 @@ class ClassParser:
         self.property_parser = PropertyParser()
 
     def _get_section_dict(self, result: ConfigSections, section: ConfigSectionName) -> SectionDict:
-        """Helper method to access section dictionaries with type safety"""
+        if section not in result:
+            result[section] = {}
         return result[section]
 
     def _determine_section(self, class_name: str, parent: str, current_section: Optional[ConfigSectionName] = None) -> Optional[ConfigSectionName]:
@@ -122,19 +123,6 @@ class ClassParser:
         all_classes, _ = parse_block(content, 0)
         logger.debug("Found top-level classes: %s", list(all_classes.keys()))
 
-        for class_name, class_data in all_classes.items():
-            section = self._determine_section(class_name, class_data['parent'])
-            if section:
-                section_dict = self._get_section_dict(result, section)
-                # Add class and its nested classes to appropriate section
-                self._add_class_tree(section_dict, class_name, class_data)
-
-        logger.debug("Finished parsing. Sections summary:")
-        for section_name, section_dict in result.items():
-            logger.debug("%s: %d classes", section_name, len(section_dict))
-            for class_name, class_data in section_dict.items():
-                logger.debug("  - %s (container: %s)", class_name, class_data['container'])
-
         return cast(ClassSectionsDict, result)
 
     def _clean_code(self, code: str) -> str:
@@ -174,15 +162,3 @@ class ClassParser:
             end_pos += 1
 
         return content[start_pos:end_pos], end_pos
-
-    def _add_class_tree(self, section: Dict[str, ClassDict], class_name: str, class_data: Dict[str, Any], prefix: str = '') -> None:
-        """Add a class and all its nested classes to the given section"""
-        section[class_name] = ClassDict(
-            parent=class_data['parent'],
-            properties=class_data['properties'],
-            container=prefix
-        )
-        
-        # Add nested classes with current class as prefix
-        for nested_name, nested_data in class_data.get('nested', {}).items():
-            self._add_class_tree(section, nested_name, nested_data, class_name)
