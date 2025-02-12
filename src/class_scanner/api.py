@@ -3,9 +3,13 @@ import logging
 from typing import Callable, Dict, Optional, Union
 from .cache import ClassCache
 from .scanner import Scanner
-from .models import PboScanData, ClassData
+from .models import PboScanData
 
 logger = logging.getLogger(__name__)
+
+def _normalize_path(path: Union[str, Path]) -> str:
+    """Convert path to normalized string format."""
+    return str(Path(path).absolute())
 
 class ClassAPI:
     """Main API class for class scanning functionality"""
@@ -52,28 +56,30 @@ class ClassAPI:
             if self._progress_callback:
                 self._progress_callback(f"Processing {pbo_file}")
 
-            if result := self.scan_pbo(pbo_file):
-                results[str(pbo_file)] = result
+            if result := self.scan(pbo_file):
+                results[_normalize_path(pbo_file)] = result
                 
         # Save cache if directory specified
         self.save_cache()
 
         return results
 
-    def scan_pbo(self, pbo_path: Union[str, Path]) -> Optional[PboScanData]:
+    def scan(self, pbo_path: Union[str, Path]) -> Optional[PboScanData]:
         """Scan a single PBO file for class definitions"""
         pbo_path = Path(pbo_path)
         if not pbo_path.exists():
             logger.debug("Invalid file path: %s", pbo_path)
             return None
 
+        normalized_path = _normalize_path(pbo_path)
+
         # Check cache first
-        if cached := self.cache.get(pbo_path):
+        if cached := self.cache.get(normalized_path):
             return cached
 
         # Scan if not in cache
         if result := self.scanner.scan_pbo(pbo_path):
-            self.cache.add(pbo_path, result)
+            self.cache.add(normalized_path, result)
             return result
 
         return None
