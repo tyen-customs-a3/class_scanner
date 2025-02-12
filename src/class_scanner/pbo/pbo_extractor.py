@@ -52,6 +52,10 @@ class PboExtractor:
         self._temp_base.mkdir(parents=True, exist_ok=True)
 
         temp_dir = self._temp_base / f"extract_{uuid.uuid4().hex}"
+        
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        
         temp_dir.mkdir(parents=True)
         self._temp_dirs.add(temp_dir)
         return temp_dir
@@ -83,6 +87,18 @@ class PboExtractor:
 
     def extract_files(self, pbo_path: Path, output_dir: Path, file_filter: Optional[str] = None) -> Tuple[int, str, str]:
         """Extract files from PBO with bin file handling"""
+        # Ensure output directory exists
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # If extracting specific file, clean it up first
+        if file_filter:
+            target_file = output_dir / file_filter
+            if target_file.exists():
+                try:
+                    target_file.unlink()
+                except Exception as e:
+                    logger.warning(f"Failed to delete existing file {target_file}: {e}")
+
         cmd = ['extractpbo', '-S', '-P', '-Y']
         if file_filter:
             cmd.append(f'-F={file_filter}')
