@@ -92,7 +92,7 @@ class ClassCache:
 
     def is_valid(self) -> bool:
         """Check if cache is still valid"""
-        return datetime.now() - self._last_updated < self._max_age
+        return True
 
     def clear(self) -> None:
         """Clear both caches"""
