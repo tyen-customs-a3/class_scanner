@@ -1,4 +1,3 @@
-from enum import auto
 import re
 from typing import List, Optional, Tuple
 

@@ -1,8 +1,7 @@
 import logging
 from pathlib import Path
-from typing import Dict, Optional, cast, Callable, Union, List
+from typing import Dict, Optional, Union
 
-from class_scanner.constants import ConfigSectionName, CFG_GLOBAL
 from class_scanner.models import ClassData, PboScanData
 from class_scanner.parser.class_parser import ClassParser
 from class_scanner.pbo.pbo_extractor import PboExtractor
@@ -34,11 +33,12 @@ class Scanner:
         """Scan a PBO file for class definitions"""
         try:
             code_files = self.extractor.extract_code_files(path)
+            
             if not code_files:
                 logger.debug(f"No code files found in {path}")
                 return None
 
-            # Process each cpp and hpp file individually
+            # Process every code file and extract class definitions
             classes = {}
             for name, content in code_files.items():
                 if not name.lower().endswith(('.cpp', '.hpp')):
@@ -47,8 +47,8 @@ class Scanner:
                 sections = self.parser.parse_class_definitions(content)
                 for section_name, section_classes in sections.items():
                     for class_name, class_info in section_classes.items():
-                        # If class already exists, only overwrite if this is config.cpp
-                        if class_name in classes and not name.lower().endswith('config.cpp'):
+                        
+                        if class_name in classes:
                             continue
                             
                         classes[class_name] = ClassData(
@@ -60,7 +60,6 @@ class Scanner:
                             config_type=section_name
                         )
 
-            # Always return a PboClasses object even if empty
             return PboScanData(
                 classes=classes,
                 source=path.stem
