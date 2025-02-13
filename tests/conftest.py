@@ -3,7 +3,6 @@ import logging
 from pathlib import Path
 from typing import Dict, TypedDict
 import sys
-from pathlib import Path
 
 from class_scanner.api import ClassAPI
 from class_scanner.parser.class_parser import ClassParser

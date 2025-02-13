@@ -1,12 +1,10 @@
 import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch
-from typing import Dict
-import struct
 
 from class_scanner.api import ClassAPI
 from class_scanner.cache import ClassCache
-from class_scanner.models import ClassData, PboScanData, PropertyValue
+from class_scanner.models import ClassData, PboScanData
 from class_scanner.scanner import Scanner
 from tests.conftest import TEST_DATA_ROOT
 

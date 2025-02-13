@@ -106,7 +106,7 @@ def test_cache_persistence_with_multiple_entries(tmp_path):
     loaded_cache = ClassCache.load_from_disk(cache_file)
     
     # Verify all entries were preserved
-    assert len(loaded_cache._cache) == 3
+    assert len(loaded_cache._pbo_cache) == 3
     for i in range(3):
         assert loaded_cache.get(f"test_{i}.pbo") is not None
 
