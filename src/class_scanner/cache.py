@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional, Union, overload, Iterable, TypeVar
+from typing import Dict, Optional, Union, overload, Iterable, TypeVar, Tuple, cast
 from pathlib import Path
 from datetime import datetime, timedelta
 import json
@@ -29,13 +29,8 @@ class ClassCache:
     @overload
     def add(self, path: str, data: ClassData) -> None: ...
     
-    def add(self, path: str, data: T) -> None:
-        """Add item to appropriate cache based on type.
-        
-        Args:
-            path: Path for PboScanData or class name for ClassData
-            data: Either PboScanData or ClassData instance
-        """
+    def add(self, path: str, data: Union[PboScanData, ClassData]) -> None:
+        """Add item to appropriate cache based on type."""
         normalized_path = self._normalize_path(path)
         
         if isinstance(data, PboScanData):
@@ -47,23 +42,22 @@ class ClassCache:
             
         self._last_updated = datetime.now()
 
-    def add_classes(self, classes: Union[Dict[str, ClassData], Iterable[tuple[str, ClassData]]]) -> None:
-        """Efficiently add multiple classes to cache at once.
-        
-        Args:
-            classes: Either a dictionary of class_name:class_data pairs,
-                    or an iterable of (class_name, class_data) tuples
-        """
+    def add_classes(self, classes: Union[Dict[str, ClassData], Iterable[Tuple[str, ClassData]]]) -> None:
+        """Add multiple classes to cache at once."""
         try:
             if isinstance(classes, dict):
-                # Add all classes from dictionary at once
-                for class_name, class_data in classes.items():
-                    self.add(class_name, class_data)
+                for name, class_data in classes.items():
+                    self.add(str(name), cast(ClassData, class_data))
             else:
-                # Add all classes from iterable of tuples
-                for class_name, class_data in classes:
-                    self.add(class_name, class_data)
-                    
+                for item in classes:
+                    if not isinstance(item, tuple) or len(item) != 2:
+                        raise TypeError(f"Expected (str, ClassData) tuple, got {type(item)}")
+                    name, class_data = item
+                    if not isinstance(name, str):
+                        raise TypeError(f"Class name must be str, got {type(name)}")
+                    if not isinstance(class_data, ClassData):
+                        raise TypeError(f"Class data must be ClassData, got {type(class_data)}")
+                    self.add(name, class_data)
         except Exception as e:
             self._logger.error(f"Failed to batch add classes: {e}")
 
