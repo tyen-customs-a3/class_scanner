@@ -209,3 +209,28 @@ class PboScanData:
             source=data['source'],
             last_accessed=datetime.fromisoformat(data['last_accessed'])
         )
+
+@dataclass
+class ClassObject:
+    """Represents a parsed class object with its hierarchy"""
+    name: str
+    parent: Optional[str] = None
+    properties: Dict[str, Any] = field(default_factory=dict)
+    nested_classes: List['ClassObject'] = field(default_factory=list)
+    container: Optional[str] = None
+
+    def find_nested_class(self, name: str) -> Optional['ClassObject']:
+        """Find a nested class by name"""
+        for cls in self.nested_classes:
+            if cls.name == name:
+                return cls
+        return None
+
+    def find_nested_classes_by_type(self, class_type: str) -> List['ClassObject']:
+        """Find all nested classes that inherit from a specific type"""
+        results = []
+        if self.parent == class_type:
+            results.append(self)
+        for cls in self.nested_classes:
+            results.extend(cls.find_nested_classes_by_type(class_type))
+        return results

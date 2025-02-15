@@ -1,11 +1,11 @@
 import re
-from typing import Dict, Optional, Any, cast, Tuple, TypeVar
+from typing import Dict, Optional, Any, cast, Tuple, TypeVar, List
 from pathlib import Path
 import logging
 
 from class_scanner.models import (
     ClassDict, ConfigSections, SectionDict, 
-    ClassSectionsDict
+    ClassSectionsDict, ClassObject
 )
 from class_scanner.parser.property_parser import PropertyParser
 from ..constants import ConfigSectionName, CFG_PATCHES, CFG_WEAPONS, CFG_VEHICLES, CFG_GLOBAL
@@ -133,9 +133,91 @@ class ClassParser:
         for section_name, section_dict in result.items():
             logger.debug("%s: %d classes", section_name, len(section_dict))
             for class_name, class_data in section_dict.items():
-                logger.debug("  - %s (container: %s)", class_name, class_data['container'])
+                typed_data = cast(Dict[str, Any], class_data)
+                logger.debug("  - %s (container: %s)", class_name, typed_data['container'])
 
         return cast(ClassSectionsDict, result)
+
+    def parse_hierarchical(self, content: str) -> List[ClassObject]:
+        """Parse content into hierarchical ClassObject structure preserving exact nesting"""
+        content = self._clean_code(content)
+        return self._parse_hierarchical_classes(content)
+
+    def _parse_hierarchical_classes(self, content: str, container: str = '') -> List[ClassObject]:
+        """Parse class hierarchy preserving exact structure and case"""
+        classes = []
+        pos = 0
+        
+        while pos < len(content):
+            # Find next class definition (case sensitive)
+            match = re.search(r'class\s+(\w+)(?:\s*:\s*(\w+))?\s*{', content[pos:])
+            if not match:
+                break
+                
+            class_name = match.group(1)
+            parent = match.group(2)
+            class_start = pos + match.start()
+            
+            # Extract complete class block
+            block_text, end_pos = self._extract_class_block(content, class_start)
+            if not block_text:
+                pos = end_pos
+                continue
+            
+            # Get inner content
+            inner_content = block_text[block_text.find('{')+1:block_text.rfind('}')].strip()
+            
+            # Create class object
+            class_obj = ClassObject(
+                name=class_name,
+                parent=parent,
+                container=container
+            )
+            
+            # Parse properties (exclude nested class blocks)
+            cleaned_content = re.sub(r'class\s+\w+[^{]*{[^}]*}', '', inner_content)
+            class_obj.properties = self.property_parser.parse_block_properties(cleaned_content)
+            
+            # Recursively parse nested classes
+            class_obj.nested_classes = self._parse_hierarchical_classes(inner_content, class_name)
+            
+            classes.append(class_obj)
+            pos = end_pos + 1
+            
+        return classes
+
+    def _convert_to_class_objects(self, sections: ClassSectionsDict) -> List[ClassObject]:
+        """Convert parsed sections into ClassObject hierarchy"""
+        root_classes: List[ClassObject] = []
+        processed: Dict[str, ClassObject] = {}
+
+        # First pass - create all class objects
+        for section in sections.values():
+            for class_name, class_data in section.items():
+                if class_name not in processed:
+                    obj = ClassObject(
+                        name=class_name,
+                        parent=class_data['parent'],
+                        properties=class_data['properties'],
+                        container=class_data['container']
+                    )
+                    processed[class_name] = obj
+
+        # Second pass - build hierarchy
+        for section in sections.values():
+            for class_name, class_data in section.items():
+                class_obj = processed[class_name]
+                container = class_data['container']
+
+                if container:
+                    # Add as nested class
+                    if container in processed:
+                        processed[container].nested_classes.append(class_obj)
+                else:
+                    # Add as root class
+                    root_classes.append(class_obj)
+
+        return root_classes
 
     def _clean_code(self, code: str) -> str:
         """Clean comments and whitespace from code"""
