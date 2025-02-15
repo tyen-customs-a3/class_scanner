@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 
 from class_scanner.cache import ClassCache
-from class_scanner.models import PboScanData, ClassData
+from class_scanner.models import PboScanData, ClassData, CacheFileStructure
 
 @pytest.fixture
 def sample_pbo_classes():
@@ -57,10 +57,21 @@ def test_cache_file_structure(populated_cache, tmp_path):
     with cache_file.open('r') as f:
         data = json.load(f)
     
-    assert 'max_cache_size' in data
-    assert 'last_updated' in data
-    assert 'cache' in data
-    assert isinstance(data['cache'], dict)
+    # Use CacheFileStructure keys for validation
+    expected_keys = set(CacheFileStructure.__annotations__.keys())
+    assert set(data.keys()) == expected_keys
+    
+    # Type validation
+    assert isinstance(data['max_cache_size'], int)
+    assert isinstance(data['last_updated'], str)
+    assert isinstance(data['pbo_cache'], dict)
+    assert isinstance(data['class_cache'], dict)
+    
+    # Validate PboScanData structure if cache has entries
+    if data['pbo_cache']:
+        pbo_entry = next(iter(data['pbo_cache'].values()))
+        expected_pbo_keys = {'classes', 'source', 'last_accessed'}
+        assert set(pbo_entry.keys()) == expected_pbo_keys
 
 def test_cache_invalid_file(tmp_path):
     """Test loading from invalid cache file"""

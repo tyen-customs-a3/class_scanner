@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import json
 
-from .models import PboScanData, ClassData
+from .models import PboScanData, ClassData, CacheFileStructure
 
 T = TypeVar('T', PboScanData, ClassData)
 
@@ -103,7 +103,7 @@ class ClassCache:
     def save_to_disk(self, cache_file: Path) -> None:
         """Save both caches to disk"""
         cache_file.parent.mkdir(parents=True, exist_ok=True)
-        cache_data = {
+        cache_data: CacheFileStructure = {
             'max_cache_size': self.max_cache_size,
             'last_updated': self._last_updated.isoformat(),
             'pbo_cache': {

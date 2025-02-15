@@ -88,12 +88,12 @@ class ClassData:
     """Core class definition data structure"""
     name: str
     parent: str
-    properties: Dict[str, Any]  # Changed to Any
+    properties: Dict[str, Any]
     source_file: Path
     container: str = ""
     config_type: str = ""
     scope: int = 0
-    category: Optional[str] = None  # Add back category field
+    category: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to serializable dictionary"""
@@ -234,3 +234,9 @@ class ClassObject:
         for cls in self.nested_classes:
             results.extend(cls.find_nested_classes_by_type(class_type))
         return results
+
+class CacheFileStructure(TypedDict):
+    max_cache_size: int
+    last_updated: str
+    pbo_cache: Dict[str, Dict[str, Any]]
+    class_cache: Dict[str, Dict[str, Any]]
