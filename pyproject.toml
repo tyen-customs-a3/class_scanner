@@ -1,27 +1,26 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "class_scanner"
 version = "0.1.0"
 description = "Class scanner for game mods"
-authors = [{name = "Your Name"}]
+authors = [{name = "Tom Campbell",email = "tyen901@gmail.com"}]
 readme = "README.md"
-requires-python = ">=3.8"
-dependencies = [
-    "colorama==0.4.6",
-    "iniconfig==2.0.0",
-    "packaging==24.2", 
-    "pluggy==1.5.0",
-    "pytest==8.3.4"
-]
+requires-python = ">=3.13"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/class_scanner"]
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 pythonpath = [
     "src",
 ]
 testpaths = ["tests"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+    "pytest-cov",
+    "setuptools>=45",
+    "wheel",
+    "setuptools_scm>=6.2"
+]
