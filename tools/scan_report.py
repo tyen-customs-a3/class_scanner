@@ -12,8 +12,6 @@ from class_scanner.api import ClassAPI
 from reports.types import ClassInfo, PboInfo, ReportData
 from reports.json_encoder import CustomJSONEncoder
 from reports.class_list_report import create_class_list_report
-from reports.hierarchy_report import create_hierarchy_report
-from reports.node_edge_report import create_node_edge_report
 from reports.targeted_inheritance_report import create_targeted_inheritance_report
 from reports.structure_report import create_structure_report
 

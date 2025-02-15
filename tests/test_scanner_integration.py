@@ -1,7 +1,6 @@
 import pytest
 from pathlib import Path
 import sys
-from typing import Dict, Any
 
 # Add parent directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))

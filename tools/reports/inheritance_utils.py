@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, Set, List, Tuple, Optional
+from typing import Dict, Set, List, Optional
 from .types import ReportData
 
 

@@ -1,8 +1,6 @@
 import pytest
 from pathlib import Path
-from datetime import datetime, timedelta
 import json
-import tempfile
 
 from class_scanner.cache import ClassCache
 from class_scanner.models import PboScanData, ClassData
