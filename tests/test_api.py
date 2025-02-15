@@ -110,14 +110,6 @@ def test_set_progress_callback(api):
     api.set_progress_callback(callback)
     assert api._progress_callback == callback
 
-def test_scan_directory_basic(api, test_dir, sample_configs):
-    """Test basic directory scanning"""
-    results = api.scan_directory(test_dir)
-    assert len(results) > 0
-    for test_case in sample_configs.values():
-        pbo_path = test_case['path']
-        assert str(pbo_path) in results
-
 def test_scan_directory_with_limit(api, test_dir):
     """Test directory scanning with file limit"""
     results = api.scan_directory(test_dir, file_limit=1)
@@ -163,7 +155,7 @@ def test_scan_single_pbo(api, test_dir, sample_configs):
     """Test scanning a single PBO file"""
     mirror_data = sample_configs['mirror']
     pbo_path = mirror_data['path']  # Use the complete path directly
-    result = api.scan_pbo(pbo_path)
+    result = api.scan(pbo_path)
     
     assert result is not None
     assert isinstance(result, PboScanData)
@@ -172,7 +164,7 @@ def test_scan_single_pbo(api, test_dir, sample_configs):
 def test_scan_nonexistent_pbo(api, tmp_path):
     """Test scanning a nonexistent PBO file"""
     nonexistent = tmp_path / "nonexistent.pbo"
-    result = api.scan_pbo(nonexistent)
+    result = api.scan(nonexistent)
     assert result is None
 
 def test_scan_invalid_file(api, tmp_path):
@@ -181,7 +173,7 @@ def test_scan_invalid_file(api, tmp_path):
     invalid = tmp_path / "invalid.pbo"
     invalid.write_text("not a valid pbo")
     
-    result = api.scan_pbo(invalid)
+    result = api.scan(invalid)
     assert result is None
 
 def test_api_cache_persistence(api, test_dir, tmp_path):

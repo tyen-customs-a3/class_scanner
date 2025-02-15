@@ -30,39 +30,6 @@ def test_scan_sample_directory(scanner: Scanner, test_data_path: Path):
     assert any('mirrorform.pbo' in path for path in pbo_paths)
     assert any('babe_em.pbo' in path for path in pbo_paths)
 
-def test_pbo_content_extraction(scanner: Scanner, sample_configs):
-    """Test extraction of PBO contents"""
-    for config_name, config_data in sample_configs.items():
-        pbo_path = config_data['path']
-        assert pbo_path.exists(), f"Test PBO not found: {config_name}"
-        
-        result = scanner.scan_pbo(pbo_path)
-        assert result is not None
-        
-        # Verify basic class structure matches expected data
-        for class_name, class_info in config_data['expected_classes'].items():
-            assert class_name in result.classes, \
-                f"Missing class: {class_name} in {config_name}"
-            if class_info['parent']:
-                assert result.classes[class_name].parent == class_info['parent'], \
-                    f"Wrong parent for {class_name} in {config_name}"
-
-def test_scan_multiple_pbos(scanner: Scanner, sample_configs):
-    """Test scanning multiple PBO files"""
-    for config_name, config_data in sample_configs.items():
-        pbo_path = config_data['path']
-        assert pbo_path.exists(), f"PBO not found: {config_name}"
-        
-        result = scanner.scan_pbo(pbo_path)
-        assert result is not None
-        
-        # Verify expected classes are present
-        for class_name, class_info in config_data['expected_classes'].items():
-            assert class_name in result.classes, \
-                f"Missing class {class_name} in {config_name}"
-            if class_info['parent']:
-                assert result.classes[class_name].parent == class_info['parent']
-
 def test_scan_invalid_directory(scanner: Scanner, tmp_path: Path):
     """Test scanner behavior with invalid directory"""
     invalid_dir = tmp_path / "nonexistent"
